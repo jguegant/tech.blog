@@ -28,3 +28,6 @@ DELETE_OUTPUT_DIRECTORY = True
 MENUITEMS = (('Archives', SITEURL + '/archives.html'),
              ('Categories', SITEURL + '/categories.html'),
              ('Tags', SITEURL + '/tags.html'),)
+
+GOOGLE_ANALYTICS = 'UA-68827527-1'
+DISQUS_SITENAME = 'jeanguegantswebsite'

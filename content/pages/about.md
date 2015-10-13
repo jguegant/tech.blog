@@ -1,10 +1,15 @@
-Title: My super title
-Date: 2010-12-03 10:20
-Modified: 2010-12-05 19:30
-Category: Python
-Tags: pelican, publishing
-Slug: my-super-post
-Authors: Alexis Metaireau, Conan Doyle
-Summary: Short version for index and feeds
+Title: About
+Date: 2015-10-13 22:20
+Modified: 2015-10-13 22:20
+Slug: about
 
-This is the content of my super blog post.
+### Who I am?
+Hej, I'm Jean Guegant, a 23 years old Frenchman living in Sweden.
+
+I discovered the computer science world in my teenage years...
+
+### What I do?
+Well, 
+When not behind my computer, you can usually find me 
+
+### About this blog:
