@@ -3,8 +3,11 @@
 from __future__ import unicode_literals
 
 AUTHOR = u'Jean Guegant'
-SITENAME = u"Jean Guegant's website"
-SITEURL = ''
+SITENAME = u"Jean Guegant's Blog"
+SITETITLE = AUTHOR
+SITESUBTITLE = u'Software Engineer - C++, security, game development and random thoughts.'
+SITEURL = 'http://localhost:8000'
+SITELOGO = SITEURL + '/images/myself.png'
 
 PATH = 'content'
 
@@ -20,16 +23,34 @@ AUTHOR_FEED_ATOM = None
 AUTHOR_FEED_RSS = None
 
 # Blogroll
-LINKS = (('Pelican', 'http://getpelican.com/'),
-         ('Python.org', 'http://python.org/'),
-         ('Jinja2', 'http://jinja.pocoo.org/'),
-         ('You can modify those links in your config file', '#'),)
+LINKS = (
+        # ('You can modify those links in your config file', '#'),
+        )
 
 # Social widget
-SOCIAL = (('You can add links in your config file', '#'),
-          ('Another social link', '#'),)
+SOCIAL = (('linkedin', 'https://se.linkedin.com/in/jguegant'),
+          ('github', 'https://github.com/Jiwan'),) 
+
+# Menu
+USE_FOLDER_AS_CATEGORY = True
+MAIN_MENU = True
+MENUITEMS = (('Archives', '/archives.html'),
+             ('Categories', '/categories.html'),
+             ('Tags', '/tags.html'),)
 
 DEFAULT_PAGINATION = 10
 
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
+
+# THEME
+THEME = "../Flex"
+
+# Copyright License.
+CC_LICENSE = {
+    'name': 'Creative Commons Attribution-ShareAlike',
+    'version': '4.0',
+    'slug': 'by-sa'
+}
+
+COPYRIGHT_YEAR = 2015
