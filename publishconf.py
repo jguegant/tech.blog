@@ -23,3 +23,8 @@ DELETE_OUTPUT_DIRECTORY = True
 
 #DISQUS_SITENAME = ""
 #GOOGLE_ANALYTICS = ""
+
+# Update menu url.
+MENUITEMS = (('Archives', SITEURL + '/archives.html'),
+             ('Categories', SITEURL + '/categories.html'),
+             ('Tags', SITEURL + '/tags.html'),)

@@ -34,9 +34,9 @@ SOCIAL = (('linkedin', 'https://se.linkedin.com/in/jguegant'),
 # Menu
 USE_FOLDER_AS_CATEGORY = True
 MAIN_MENU = True
-MENUITEMS = (('Archives', '/archives.html'),
-             ('Categories', '/categories.html'),
-             ('Tags', '/tags.html'),)
+MENUITEMS = (('Archives', SITEURL + '/archives.html'),
+             ('Categories', SITEURL + '/categories.html'),
+             ('Tags', SITEURL + '/tags.html'),)
 
 DEFAULT_PAGINATION = 10
 
