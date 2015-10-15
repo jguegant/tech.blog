@@ -54,3 +54,6 @@ CC_LICENSE = {
 }
 
 COPYRIGHT_YEAR = 2015
+
+# Robots.
+ROBOTS = u'index, follow'
