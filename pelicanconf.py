@@ -57,3 +57,21 @@ COPYRIGHT_YEAR = 2015
 
 # Robots.
 ROBOTS = u'index, follow'
+
+# Sitemap for robots.
+PLUGIN_PATHS = ['../plugins']
+PLUGINS = ['sitemap']
+
+SITEMAP = {
+    'format': 'xml',
+    'priorities': {
+        'articles': 0.6,
+        'indexes': 0.6,
+        'pages': 0.5
+    },
+    'changefreqs': {
+        'articles': 'monthly',
+        'indexes': 'daily',
+        'pages': 'monthly'
+    }
+}
