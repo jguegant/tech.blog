@@ -14,7 +14,7 @@ No, sure no! Computer science is my profession but also one of my favorite hobby
 
 I discovered my passion for this IT area during my teenage years, within the game development community. I started by challenging myself with the security of some online games, or what is also called hacking, cheating, duping... I quickly switched to a more constructive approach that consisted in producing content for video-games and participating in some community projects. I find the full stack of a online video-game platform particulary interesting as it makes you explore almost all the domains of software development, like: 3D rendering, network programming, security and system administration. All these years working on some personal projects greatly influenced my studies as well as my carrier!
 
-As my first programming language, I fell in love of C# and its related .Net framework. With the recent Microsoft moves (porting their tools on Linux), I may be able to reconcile my love for the .Net products and my strong apettite for the Unix-like platforms. I am fond of the C++ language and its most recent versions C++11 & C++14 (C++17 coming soon). Despite a general dislike for the complexity of this language, I find all its features, its tricks (Template Meta Programming & co), greatly satisfying when mastered. I definitely like to use C++ in most of my projects. When in needs of scripting or some easy tasks, I mainly use the Python for its clean and efficient design, which fits my coding mindset.
+As my first programming language, I fell in love of C# and its related .Net framework. With the recent Microsoft moves (porting their tools on Linux), I may be able to reconcile my love for the .Net products and my strong apettite for the Unix-like platforms. I am fond of the C++ language and its most recent versions C++11 & C++14 (C++17 coming soon). Despite a general dislike for the complexity of this language, I find all its features, its tricks (Template Meta Programming & co), greatly satisfying once mastered. I definitely like to use C++ in most of my projects. When in needs of scripting or some easy tasks, I mainly use the Python for its clean and efficient design, which fits my coding mindset.
 
 I have had some experience in some other technologies like web development, but my favorite fields are more in the low-levels.
 I like the following topics:
@@ -26,7 +26,7 @@ I like the following topics:
 
 
 ### What else do you like?
-Paradoxically, I generally prefer outdoor activities than indoor activities. When not behind my computer, you can usually find me hiking with some friends, jogging in the nearest woods or practicing my favorite sports: windsurfing (I have teacher licence in sailing), mountain biking or skiing. I also like good old rock bands, a lot! 
+Paradoxically, I generally prefer outdoor activities than indoor activities. When not behind my computer, you can usually find me hiking with some friends, jogging in the nearest woods or practicing my favorite sports: windsurfing (I have teacher license in sailing), mountain biking or skiing. I also like good old rock bands, a lot! 
 
 ### About this blog:
-Well, I hope you will enjoy all my posts about my latest favorite technologies and maybe some random thoughts from time to time. 
+Well, I hope you will enjoy all my posts talking about my latest favorite technologies and maybe some random thoughts from time to time. 
