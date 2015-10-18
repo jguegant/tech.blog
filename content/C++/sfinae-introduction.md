@@ -12,6 +12,8 @@ As a C++ enthusiast, I usually follow the annual C++ conference [cppconf](http:/
 ###Introspection in C++?
 Before explaining what is **SFINAE**, let's explore one of its main usage: **introspection**. As you might be aware, C++ doesn't excel when it comes to examine the type or properties of an object at runtime. The best ability provided by default would be [RTTI](https://en.wikipedia.org/wiki/Run-time_type_information). Not only **RTTI** isn't always available, but it also gives you barely more than the current type of the manipulated object. Dynamic languages or those having **reflection** on the other hand are really convenient in some situations like **serialization**.
 
+For instance, in Python using reflection, one can do the following:
+
 	:::python
 	class A(object):
 	    # Simply overrides the 'object.__str__' method.
