@@ -128,7 +128,7 @@ A simple function call like **f(obj);** in C++ activates a mechanism to figure o
 
 	f(1); // Call f(int i);
 
-In C++ you also have some sink-hole functions that accept everything: the function templates that accept any kind of parameter (let's say T). But the true black-hole your compiler, the variable vacuum, the oblivion of the forgotten types are the [variadic functions](http://en.cppreference.com/w/cpp/utility/variadic). Yes, exactly like the horrible C **printf**.
+In C++ you also have some sink-hole functions that accept everything: the function templates that accept any kind of parameter (let's say T). But the true black-hole of your compiler, the devil variable vacuum, the oblivion of the forgotten types are the [variadic functions](http://en.cppreference.com/w/cpp/utility/variadic). Yes, exactly like the horrible C **printf**.
 
 	:::c++
 	std::string f(...); // Variadic functions are so "untyped" that...
@@ -138,7 +138,7 @@ In C++ you also have some sink-hole functions that accept everything: the functi
 The fact that function templates are less generic than variadic functions is the first point you must remember!
 
 #### SFINAE:
-I am already teasing you with the power for already few paragraphs and here finally comes the explanation of this not so complex acronym. **SFINAE** stands for **S**ubstitution **F**ailure **I**s **N**ot **A**n **E**rror. In rough terms, a **substitution** is the mechanism that tries to replace the template parameters with the provided types or values. In some cases, if the **substitution** leads to an invalid code, the processor shouldn't throw a massive amount of errors but simply continue to try the other available **overloads**. The **SFINAE** concept simply guaranties such a "sane" behavior in a "sane" compiler. For instance:
+I am already teasing you with the power for already few paragraphs and here finally comes the explanation of this not so complex acronym. **SFINAE** stands for **S**ubstitution **F**ailure **I**s **N**ot **A**n **E**rror. In rough terms, a **substitution** is the mechanism that tries to replace the template parameters with the provided types or values. In some cases, if the **substitution** leads to an invalid code, the compiler shouldn't throw a massive amount of errors but simply continue to try the other available **overloads**. The **SFINAE** concept simply guaranties such a "sane" behavior in a "sane" compiler. For instance:
 
 	:::c++
 	/*
@@ -321,7 +321,7 @@ We need to find a clever **SFINAE** solution on the signature of "**template <cl
     enable_if<false, int>::type t3; // Compiler unhappy. no type named 'type' in 'enable_if<false, int>';
     enable_if<hasSerialize<A>::value, int>::type t4; // no type named 'type' in 'enable_if<false, int>';
 
-As you can see, we can trigger a substitution failure according to a compile time expression with **enable_if**. Now we can use this failure on the "**template <class T\> std::string serialize(const T& obj)**" signature to dispatch to the write version. Finally, we have the true solution of our problem:
+As you can see, we can trigger a substitution failure according to a compile time expression with **enable_if**. Now we can use this failure on the "**template <class T\> std::string serialize(const T& obj)**" signature to dispatch to the right version. Finally, we have the true solution of our problem:
 
 	:::c++
 	template <class T> typename enable_if<hasSerialize<T>::value, std::string>::type serialize(const T& obj)
@@ -343,11 +343,30 @@ As you can see, we can trigger a substitution failure according to a compile tim
     std::cout << serialize(b) << std::endl;
     std::cout << serialize(c) << std::endl;
 Two details worth being noted! Firstly we use **enable_if** on the return type, in order to keep the paramater deduction, otherwise we would have to specify the type explicitely "**serialize<A\>(a)**". Second, even the version using **to_string** must use the **enable_if**, otherwise **serialize(b)** would have two potential overloads available and raise an ambiguity. If you want to check the full code of this C++98 version, here is a [Gist](https://gist.github.com/Jiwan/2573fc47e4fa5025306b).
+Life is much easier in C++11, so let's see the beauty of this new standard!
 
 
 
 ###When C++11 came to our help:
-decltype, declval, more failure, std::true_type, etc
+SFINAE enforced
+decltype
+auto
+constrexpr
+std::true_type
+
+template <typename T, typename = void>
+struct has_toString
+  : std::false_type
+{ };
+template <typename T>
+struct has_toString<T, decltype((void)std::declval<T>().toString())>
+  : std::true_type
+{ };
+
+####Other interesting features:
+	declval
+	nullptr
+	lambda
 
 ### The supremacy of C++14:
 constrexpr and auto lambda/functions, enable_if_t
