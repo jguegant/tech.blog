@@ -424,10 +424,13 @@ In cooking, a good recipe requires to mix all the best ingredients in the right 
 Two solutions:
 
 Boost.hanna:
+http://stackoverflow.com/questions/18700558/default-template-parameter-partial-specialization
+
 template <typename T, typename = void>
 struct has_toString
   : std::false_type
 { };
+
 template <typename T>
 struct has_toString<T, decltype((void)std::declval<T>().toString())> // Void to match the default
   : std::true_type
