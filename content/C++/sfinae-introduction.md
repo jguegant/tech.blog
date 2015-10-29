@@ -421,14 +421,28 @@ C++11 also came with a new way to do compile-time computations! The new keyword 
 ####Blending time:
 In cooking, a good recipe requires to mix all the best ingredients in the right proportions. If you don't want to have a spaghetti code dating from 1998 for dinner, let's revisit our C++98 **hasSerialize** and **serialize** functions with "fresh" ingredients from 2011. Let's start by removing the rotting **reallyHas** trick with a tasty **decltype** and bake a bit of **std::true_type** instead of **sizeof**. After 15min in the oven (or fighting with a new headache), you will obtain:
 
+Two solutions:
+
+Boost.hanna:
 template <typename T, typename = void>
 struct has_toString
   : std::false_type
 { };
 template <typename T>
-struct has_toString<T, decltype((void)std::declval<T>().toString())>
+struct has_toString<T, decltype((void)std::declval<T>().toString())> // Void to match the default
   : std::true_type
 { };
+
+Direct usage of constrexpr:
+// http://stackoverflow.com/questions/9530928/checking-a-member-exists-possibly-in-a-base-class-c11-version
+// Culled by SFINAE if reserve does not exist or is not accessible
+template <typename T>
+constexpr auto has_reserve_method(T& t) -> decltype(t.reserve(0), bool()) {
+  return true;
+}
+
+// Used as fallback when SFINAE culls the template method
+constexpr bool has_reserve_method(...) { return false; }
 
 ####Other interesting features:
 	nullptr
