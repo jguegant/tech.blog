@@ -184,8 +184,8 @@ But wait! If we can manipulate some compile-time integers, couldn't we do some c
 	yes& f1();
 	no& f2();
 
-	std::cout << (sizeof(f1()) == sizeof(f2())) << std::endl; // Output 0
-    std::cout << (sizeof(f1()) == sizeof(f1())) << std::endl; // Output 1
+	std::cout << (sizeof(f1()) == sizeof(f2())) << std::endl; // Output 0.
+    std::cout << (sizeof(f1()) == sizeof(f1())) << std::endl; // Output 1.
 
 ####Combining everything:
 Now we have all the tools to create a solution to check the existence of a method within a type at compile time. You might even have already figured it out most of it by yourself. So let's create it:
@@ -197,14 +197,19 @@ Now we have all the tools to create a solution to check the existence of a metho
 	    typedef char yes[1];
 	    typedef yes no[2];
 
-	    // This helper struct permits us to check two properties of a template argument.
-	    // The first argument must match the second one.
-	    // &C::serialize is actually the same as its signature!
-	    template <typename U, U> struct reallyHas;
+	    // This helper struct permits us to check that serialize is truly a method.
+	    // The second argument must be of the type of the first.
+	    // For instance reallyHas<int, 10> would be substituated by reallyHas<int, int 10> and works!
+	    // reallyHas<int, &C::serialize> would be substituated by reallyHas<int, int &C::serialize> and fail!
+	    // Note: It only works with integral constants and pointers (so function pointers work).
+	    // In our case we check that &C::serialize has the same signature as the first argument!
+	    // reallyHas<std::string (C::*)(), &C::serialize> should be substituated by 
+	    // reallyHas<std::string (C::*)(), std::string (C::*)() &C::serialize> and work!
+	    template <typename U, U u> struct reallyHas;
 
 	    // Two overloads for yes: one for the signature of a normal method, one is for the signature of a const method.
-	    // Note that we accept a pointer to our helper struct, 
-	    // in order to avoid to instantiate a real instance of this type.
+	    // We accept a pointer to our helper struct, in order to avoid to instantiate a real instance of this type.
+	    // std::string (C::*)() is function pointer declaration.
 	    template <typename C> static yes& test(reallyHas<std::string (C::*)(), &C::serialize>* /*unused*/) { }
 	    template <typename C> static yes& test(reallyHas<std::string (C::*)() const, &C::serialize>* /*unused*/) { }
 
@@ -223,7 +228,7 @@ Now we have all the tools to create a solution to check the existence of a metho
     std::cout << hasSerialize<B>::value << std::endl;
     std::cout << hasSerialize<C>::value << std::endl;
 
-The **reallyHas** struct is kinda tricky but necessary to ensure that serialize is a method and not a simple member of the type. You can way more tests on a type using variants of this solution (test a member, a sub-type...) and I suggest you to google a bit more about **SFINAE**. Note: if you truly want a pure compile-time constant and avoid some errors on old compilers, you can replace the last value evaluation by: "**enum { value = sizeof(test<T>(0)) == sizeof(yes) };**". 
+The **reallyHas** struct is kinda tricky but necessary to ensure that serialize is a method and not a simple member of the type. You can do a lot of test on a type using variants of this solution (test a member, a sub-type...) and I suggest you to google a bit more about **SFINAE**. Note: if you truly want a pure compile-time constant and avoid some errors on old compilers, you can replace the last value evaluation by: "**enum { value = sizeof(test<T>(0)) == sizeof(yes) };**". 
 
 
 You might also wonder why it doesn't work with **inheritence**. **Inheritence** in C++ and **dynamic polymorphism** is a concept available at runtime, or in other words, a data that the compiler won't have and can't guess! However, compile time type inspection is much more efficient (0 impact at runtime) and almost as powerful as if it were at runtime.
@@ -244,15 +249,105 @@ For instance:
 
     D d;
     A& a = d; // Here we lost the type of d at compile time.
-	std::cout << testHasSerialize(d) << std::endl; // Output 1
-    std::cout << testHasSerialize(a) << std::endl; // Output 0
+	std::cout << testHasSerialize(d) << std::endl; // Output 1.
+    std::cout << testHasSerialize(a) << std::endl; // Output 0.
 
-####Time to use it:
-std::enable_if 
+Last but no least, our test cover the main cases but not the tricky ones like a Functor: 
+
+	:::c++
+	struct E
+	{
+	    struct Functor
+	    {
+	        std::string operator()()
+	        {
+	            return "I am a E!";
+	        }
+	    };
+
+	    Functor serialize;
+	};
+
+    E e;
+    std::cout << e.serialize() << std::endl; // Succefully call the functor.
+    std::cout << testHasSerialize(e) << std::endl; // Output 0.
+
+The trade-off for a full coverage would be the readability. As you will see, C++11 shines in that domain!
+
+####Time to use our genius idea:
+Now you would think that it will be super easy to use our **hasSerialize** to create a **serialize** function! Okay let's try it:
+
+	:::c++
+	template <class T> std::string serialize(const T& obj)
+	{
+	    if (hasSerialize<T>::value) {
+	        return obj.serialize(); // error: no member named 'serialize' in 'A'.
+	    } else {
+	        return to_string(obj);
+	    }
+	}
+
+    A a;
+    serialize(a);
+
+It might be hard to accept, but the error raised by your compiler is absolutely normal! If you consider the code that you will obtain after substitution and compile-time evaluation:
+	
+	:::c++
+	std::string serialize(const A& obj)
+	{
+	    if (0) { // Dead branching, but the compiler will still consider it!
+	        return obj.serialize(); // error: no member named 'serialize' in 'A'.
+	    } else {
+	        return to_string(obj);
+	    }
+	}
+
+Your compiler is really a good guy and won't drop any dead-branch, and obj must therefore have both a **serialize method** and a **to_string overload** in this case. The solution is to split the serialize function into two different functions: one where we solely use **obj.serialize()** and one where we use **to_string** according to **obj's type**. We come back to an earlier problem that we already solved, how to split according to a type? **SFINAE**, for sure! At that point we could re-work our **hasSerialize** function into a **serialize** function and make it return a std::string instead of compile time boolean. But we won't do it that way! It's cleaner to separate the **hasSerialize** test from its usage **serialize**.
+
+
+We need to find a clever **SFINAE** solution on the signature of "**template <class T\> std::string serialize(const T& obj)**". I bring you the last piece of the puzzle called **enable_if**.
+
+	:::c++
+	template<bool B, class T = void> // Default template version.
+	struct enable_if {}; // This struct doesn't define "type" and the substitution will fail if you try to access it.  
+
+	template<class T> // A specialisation used if the expression is true. 
+	struct enable_if<true, T> { typedef T type; }; // This struct do have a "type" and won't fail on access.
+
+	// Usage:
+    enable_if<true, int>::type t1; // Compiler happy. t's type is int.
+    enable_if<hasSerialize<B>::value, int>::type t2; // Compiler happy. t's type is int.
+
+    enable_if<false, int>::type t3; // Compiler unhappy. no type named 'type' in 'enable_if<false, int>';
+    enable_if<hasSerialize<A>::value, int>::type t4; // no type named 'type' in 'enable_if<false, int>';
+
+As you can see, we can trigger a substitution failure according to a compile time expression with **enable_if**. Now we can use this failure on the "**template <class T\> std::string serialize(const T& obj)**" signature to dispatch to the write version. Finally, we have the true solution of our problem:
+
+	:::c++
+	template <class T> typename enable_if<hasSerialize<T>::value, std::string>::type serialize(const T& obj)
+	{
+	    return obj.serialize();
+	}
+
+	template <class T> typename enable_if<!hasSerialize<T>::value, std::string>::type serialize(const T& obj)
+	{
+	    return to_string(obj);
+	}
+
+    A a;
+    B b;
+    C c;
+    
+    // The following lines work like a charm!
+    std::cout << serialize(a) << std::endl;
+    std::cout << serialize(b) << std::endl;
+    std::cout << serialize(c) << std::endl;
+Two details worth being noted! Firstly we use **enable_if** on the return type, in order to keep the paramater deduction, otherwise we would have to specify the type explicitely "**serialize<A\>(a)**". Second, even the version using **to_string** must use the **enable_if**, otherwise **serialize(b)** would have two potential overloads available and raise an ambiguity. If you want to check the full code of this C++98 version, here is a [Gist](https://gist.github.com/Jiwan/2573fc47e4fa5025306b).
+
 
 
 ###When C++11 came to our help:
 decltype, declval, more failure, std::true_type, etc
 
 ### The supremacy of C++14:
-constrexpr and auto lambda/functions
+constrexpr and auto lambda/functions, enable_if_t
