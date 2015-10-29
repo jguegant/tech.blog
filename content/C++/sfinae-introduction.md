@@ -346,13 +346,80 @@ Two details worth being noted! Firstly we use **enable_if** on the return type, 
 Life is much easier in C++11, so let's see the beauty of this new standard!
 
 
-
 ###When C++11 came to our help:
-SFINAE enforced
-decltype
-auto
-constrexpr
-std::true_type
+After the great century leap year in 2000, people were fairly optimistic about the coming years. Some even decided to do design a new standard for the next generation of C++ coders like me! Not only this standard would ease **TMP** headaches (**T**emplate **M**eta **P**rogramming side-effects), but it would be available in the first decade, hence its code-name **C++0x**. Well, the standard sadly came the next decade (2011 ==> **C++11**), but it brought a lot of features interesting for the purpose of this article. Let's review them!
+
+####decltype, declvar, auto & co:
+Do you remember that the **sizeof operator** does a "fake evaluation" of the expression that you pass to it, and return gives you the size of the type of the expression? Well **C++11** adds a new operator called **decltype**. [decltype](http://en.cppreference.com/w/cpp/language/decltype) gives you the type of the of the expression it will evaluate. As I am kind, I won't let you google an example and give it to you directly:
+
+	:::c++
+	B b;
+    decltype(b.serialize()) test = "test"; // Evaluate b.serialize(), which is typed as std::string.
+    // Equivalent to std::string test = "test";
+
+[declvar](http://en.cppreference.com/w/cpp/utility/declval) is an utility that gives you a "fake reference" to an object of a type that couldn't be easily construct. **declvar** is really handy for our **SFINAE** constructions. **cppreference** example is really straightforward, so here is a copy:
+
+	:::c++
+	struct Default {
+	    int foo() const {return 1;}
+	};
+	 
+	struct NonDefault {
+	    NonDefault(const NonDefault&) {}
+	    int foo() const {return 1;}
+	};
+	 
+	int main()
+	{
+	    decltype(Default().foo()) n1 = 1; // int n1
+	//  decltype(NonDefault().foo()) n2 = n1; // error: no default constructor
+	    decltype(std::declval<NonDefault>().foo()) n2 = n1; // int n2
+	    std::cout << "n2 = " << n2 << '\n';
+	}
+
+
+The **auto specifier** *specifies that the type of the variable that is being declared will be automatically deduced*. [auto](http://en.cppreference.com/w/cpp/language/auto) is equivalent of **var** in C#. **auto** in **C++11** has also a less famous but nonetheless usage for function declaration. Here is a good example:
+
+	:::c++
+	bool f();
+	auto test = f(); // Famous usage, auto deduced that test is a boolean, hurray!
+
+
+
+	//							   vvv t wasn't declare at that point, it will be after as a parameter!
+	template <typename T> decltype(t.serialize()) g(const T& t) {	} // Compilation error
+
+	// Less famous usage:
+	//					  vvv auto delayed the return type specification!
+	//					  vvv				 vvv the return type is specified here and use t!
+	template <typename T> auto g(const T& t) -> decltype(t.serialize()) {	} // No compilation error.
+
+As you can see, **auto** permits to use the trailing return type syntax and use **decltype** coupled with an expression involving one of the function argument. Does it means that we can use it to test the existence of **serialize** with a SFINAE? Yes Dr. Watson! **decltype** will shine really soon, you will have to wait for the **C++14** for this tricky **auto** usage (but since it's a C++11 feature, it ends up here).
+
+####constexpr:
+C++11 also came with a new way to do compile-time computations! The new keyword **constexpr** is a hint for your compiler, meaning that this expression is constant and could be evaluate directly at compile time. In C++11, [constexpr](http://en.cppreference.com/w/cpp/language/constexpr) has a lot of rules and only a small subset of VIEs (Very Important Expression) expressions can be used (no loops...)! We still have enough for creating a compile-time factorial function:
+
+	:::c++
+	constexpr int factorial(int n)
+	{
+    	return n <= 1? 1 : (n * factorial(n - 1));
+	}
+
+	int i = factorial(5); // Call to a constexpr function.
+	// Will be replace by a good compiler by:
+	// int i = 120;
+
+**constexpr** gave birth to two pre-defined types in the STL: **std::true_type** & **std::false_type**. As their name suggest, these types encapsulate a constexpr boolean "true" and a constrexpr boolean "false". Their most important property is that a class or a struct can inherit from them. For instance:
+
+	:::c++
+	struct testStruct : std::true_type { }; // Inherit from the true type.
+
+    constexpr bool testVar = testStruct(); // Generate a compile-time testStruct.
+    bool test = testStruct::value; // Equivalent to: test = true;
+    test = testVar; // true_type has a constexpr converter operator, equivalent to: test = true;
+
+####Blending time:
+In cooking, a good recipe requires to mix all the best ingredients in the right proportions. If you don't want to have a spaghetti code dating from 1998 for dinner, let's revisit our C++98 **hasSerialize** and **serialize** functions with "fresh" ingredients from 2011. Let's start by removing the rotting **reallyHas** trick with a tasty **decltype** and bake a bit of **std::true_type** instead of **sizeof**. After 15min in the oven (or fighting with a new headache), you will obtain:
 
 template <typename T, typename = void>
 struct has_toString
@@ -364,9 +431,9 @@ struct has_toString<T, decltype((void)std::declval<T>().toString())>
 { };
 
 ####Other interesting features:
-	declval
 	nullptr
 	lambda
+	r-values
 
 ### The supremacy of C++14:
 constrexpr and auto lambda/functions, enable_if_t
