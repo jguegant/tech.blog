@@ -113,7 +113,7 @@ Here is the **C++14** solution mentionned in **Boost.Hana** documentation, using
 	    std::cout << serialize(c) << std::endl;
 	}
 
-As you can see, it only requires a bit more of boilerplate than Python, but not as much as you would expect from a language as complexe as C++. How does it work? Well if you are too lazy to read the rest, here is the simplest answer I can give you: unlike dynamically typed languages, your compiler has access a lot of static type information once fired. It makes sense that we can constraint your compiler to do a bit of work on these types! The next question that comes to your mind is "How to?". Well, right below we are going to explore the various options we have to enslave our favorite compiler for fun and profit! And we will eventually recreate our own **is_valid** and static **if_**.
+As you can see, it only requires a bit more of boilerplate than Python, but not as much as you would expect from a language as complexe as C++. How does it work? Well if you are too lazy to read the rest, here is the simplest answer I can give you: unlike dynamically typed languages, your compiler has access a lot of static type information once fired. It makes sense that we can constraint your compiler to do a bit of work on these types! The next question that comes to your mind is "How to?". Well, right below we are going to explore the various options we have to enslave our favorite compiler for fun and profit! And we will eventually recreate our own **is_valid**.
 
 ###The old-fashioned C++98-way:
 Whether your compiler is a dinosaur, your boss refuses to pay for the latest Visual Studio license or you simply love archeology, this chapter will interest you. It's also interesting for the people stuck between C++11 and C++14. The solution in C++98 relies on 3 key concepts: **overload resolution**, **SFINAE** and the static behavior of **sizeof**. 
@@ -342,7 +342,7 @@ As you can see, we can trigger a substitution failure according to a compile tim
     std::cout << serialize(a) << std::endl;
     std::cout << serialize(b) << std::endl;
     std::cout << serialize(c) << std::endl;
-Two details worth being noted! Firstly we use **enable_if** on the return type, in order to keep the paramater deduction, otherwise we would have to specify the type explicitely "**serialize<A\>(a)**". Second, even the version using **to_string** must use the **enable_if**, otherwise **serialize(b)** would have two potential overloads available and raise an ambiguity. If you want to check the full code of this C++98 version, here is a [Gist](https://gist.github.com/Jiwan/2573fc47e4fa5025306b).
+Two details worth being noted! Firstly we use **enable_if** on the return type, in order to keep the paramater deduction, otherwise we would have to specify the type explicitely "**serialize<A\>(a)**". Second, even the version using **to_string** must use the **enable_if**, otherwise **serialize(b)** would have two potential overloads available and raise an ambiguity. If you want to check the full code of this C++98 version, here is a [gist](https://gist.github.com/Jiwan/2573fc47e4fa5025306b).
 Life is much easier in C++11, so let's see the beauty of this new standard!
 
 
@@ -419,27 +419,107 @@ C++11 also came with a new way to do compile-time computations! The new keyword 
     test = testVar; // true_type has a constexpr converter operator, equivalent to: test = true;
 
 ####Blending time:
+#####First solution:
 In cooking, a good recipe requires to mix all the best ingredients in the right proportions. If you don't want to have a spaghetti code dating from 1998 for dinner, let's revisit our C++98 **hasSerialize** and **serialize** functions with "fresh" ingredients from 2011. Let's start by removing the rotting **reallyHas** trick with a tasty **decltype** and bake a bit of **constexpr** instead of **sizeof**. After 15min in the oven (or fighting with a new headache), you will obtain:
 
 	:::c++
-	template <class T, typename /*Unused*/ = std::string>
-	struct hasSerialize : std::false_type
+	template <class T> struct hasSerialize
+	{
+	    // We test if the type has serialize using decltype and declval.
+	    template <typename C> static constexpr decltype(std::declval<C>().serialize(), bool()) test(int /* unused */)
+	    {
+	        // We can return values, thanks to constexpr instead of playing with sizeof.
+	        return true;
+	    }
+
+	    template <typename C> static constexpr bool test(...)
+	    {
+	        return false;
+	    }
+
+	    // int is used to give the precedence!
+	    static constexpr bool value = test<T>(int());
+	};
+
+You might be a bit puzzled by my usage of **decltype**. The C++ comma operator "**,**" can create a chain of multiple expressions. In **decltype**, all the expressions will be evaluated, but only the last expression will be considered for the type. The **serialize** doesn't need any changes, minus the fact that the **enable_if** function is now provided in the **STL**. For your tests, here is a [gist](https://gist.github.com/Jiwan/21f65ddbd91e7ce93384).
+
+#####Second solution:
+Another C++11 solution described in **Boost.Hanna** documentation and using **std::true_type** and **std::false_type**, would be this one:
+
+	:::c++
+	// Primary template, inherit from std::false_type.
+	// ::value will return false. 
+	// Note: the second unused template parameter is set to default as std::string!!!
+	template <typename T, typename = std::string>
+	struct hasSerialize
+	        : std::false_type
 	{
 
 	};
 
-	template <class T> struct
-	hasSerialize<T, decltype(std::declval<T>().serialize())> : std::true_type
+	// Partial template specialisation, inherit from std::true_type.
+	// ::value will return true. 
+	template <typename T>
+	struct hasSerialize<T, decltype(std::declval<T>().serialize())>
+	        : std::true_type
 	{
 
 	};
 
-####Other interesting features:
-	nullptr
-	lambda
-	r-values
+This solution is, in my own opinion, more sneaky! It relies on a not-so-famous-property of default template parameters. But if your soul is already (stack-)corrupted, you may be aware that the **default parameters** are propagated in the **specialisations**. So when we use **hasSerialize<OurType\>::value**, the default parameter comes into play and we are actually looking for **hasSerialize<OurType, std::string\>::value** both on the **primary template** and the **specialisation**. In the meantime, the **substitution** and the evaluation of **decltype** are processed and our **specialisation** has the signature **hasSerialize<OurType, std::string\>** if **OurType** has a **serialize** method that returns a **std::string**, otherwise the substitution fails. The **specialisation** has therefore the precedence in the good cases. Here is a [gist](https://gist.github.com/Jiwan/160a64a5d1d25e4bdf6b) you can play with!
+
+I told you that this second solution hides a lot of complexity, and we still have a lot of C++11 features unexploited like **nullptr**, **lambda**, **r-values**. No worries, we are going to use some of them in **C++14**!
 
 ### The supremacy of C++14:
-constrexpr and auto lambda/functions, enable_if_t
+According to my Gregorian calendar in the upper-right corner of my XFCE environment, we are in 2015! I can turn on the **C++14** compilation flag on my favorite compiler safely, isn't it? Well, I can with **clang** (is **MSVC** using a maya calendar?).
+Once again, let's explore the new features, and use them to build something wonderful! We will even recreate an **is_valid**, like I promised at the beggining of this article.
 
-Thanks to [Naav](https://github.com/Naav) and [Superboum](https://github.com/superboum) for theirs careful rereading and suggestions.
+#### auto & lambdas:
+C++11 introduced [lambdas](http://en.cppreference.com/w/cpp/language/lambda). A lambda has the following syntax: 
+
+	[capture-list](params) -> non-mandatory-return-type { ...body... }
+
+A useful example in our case would be:
+
+	:::c++
+	auto l1 = [](B& b) { return b.serialize(); }; // No clear return type.
+	auto l3 = [](B& b) -> std::string { return b.serialize(); }; // Fixed return type.
+    auto l2 = [](B& b) -> decltype(b.serialize()) { return b.serialize(); }; // Return type dependant to B.
+
+    std::cout << l1(b) << std::endl; // Output: I am a B!
+    std::cout << l2(b) << std::endl; // Output: I am a B!
+    std::cout << l3(b) << std::endl; // Output: I am a B!
+
+**C++14** brings a small change to the **lambdas** but with a big impact! **Lambdas** accept **auto parameters**: the parameter type is deduced according the argument. **Lambdas** are just anonymous functions (paranoids? maybe), and **lambdas** with **auto parameters** are anonymous functions with anonymous templated types (even more incognito). Let's take a look:
+
+	:::c++
+	// b's type is automagically deduced!
+	auto l4 = [](auto& t) -> decltype(t.serialize()) { return b.serialize(); };
+
+	// l4 is equivalent to a function like:
+	// template <typename T> auto l4(T& t) -> decltype(t.serialize()) { return b.serialize(); };
+
+    std::cout << l4(b) << std::endl; // Output: I am a B!
+    std::cout << l4(a) << std::endl; // Error: no member named 'serialize' in 'A'.
+
+It should remind you the beggining of my initial solution:
+
+	:::c++
+	// Check if a type has a serialize method.
+	auto hasSerialize = hana::is_valid([](auto&& x) -> decltype(x.serialize()) { });
+
+And the good new is that we have everything to recreate **is_valid**, right now!
+
+####The making-of a valid **is_valid**:
+
+A first struct to remember the signature of the lambda!
+This struct operator() accept some arguments that will be matched with the lambda.
+
+
+####Opening:
+Only works with one type. Parameters packs!!!
+TODO: if_.
+
+
+
+Thanks to [Naav](https://github.com/Naav) and [Superboum](https://github.com/superboum) for their careful rereading and theirs suggestions.
