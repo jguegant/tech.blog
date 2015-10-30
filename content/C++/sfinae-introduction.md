@@ -199,11 +199,11 @@ Now we have all the tools to create a solution to check the existence of a metho
 
 	    // This helper struct permits us to check that serialize is truly a method.
 	    // The second argument must be of the type of the first.
-	    // For instance reallyHas<int, 10> would be substituated by reallyHas<int, int 10> and works!
-	    // reallyHas<int, &C::serialize> would be substituated by reallyHas<int, int &C::serialize> and fail!
+	    // For instance reallyHas<int, 10> would be substituted by reallyHas<int, int 10> and works!
+	    // reallyHas<int, &C::serialize> would be substituted by reallyHas<int, int &C::serialize> and fail!
 	    // Note: It only works with integral constants and pointers (so function pointers work).
 	    // In our case we check that &C::serialize has the same signature as the first argument!
-	    // reallyHas<std::string (C::*)(), &C::serialize> should be substituated by 
+	    // reallyHas<std::string (C::*)(), &C::serialize> should be substituted by 
 	    // reallyHas<std::string (C::*)(), std::string (C::*)() &C::serialize> and work!
 	    template <typename U, U u> struct reallyHas;
 
@@ -347,7 +347,7 @@ Life is much easier in C++11, so let's see the beauty of this new standard!
 
 
 ###When C++11 came to our help:
-After the great century leap year in 2000, people were fairly optimistic about the coming years. Some even decided to do design a new standard for the next generation of C++ coders like me! Not only this standard would ease **TMP** headaches (**T**emplate **M**eta **P**rogramming side-effects), but it would be available in the first decade, hence its code-name **C++0x**. Well, the standard sadly came the next decade (2011 ==> **C++11**), but it brought a lot of features interesting for the purpose of this article. Let's review them!
+After the great century leap year in 2000, people were fairly optimistic about the coming years. Some even decided to design a new standard for the next generation of C++ coders like me! Not only this standard would ease **TMP** headaches (**T**emplate **M**eta **P**rogramming side-effects), but it would be available in the first decade, hence its code-name **C++0x**. Well, the standard sadly came the next decade (2011 ==> **C++11**), but it brought a lot of features interesting for the purpose of this article. Let's review them!
 
 ####decltype, declvar, auto & co:
 Do you remember that the **sizeof operator** does a "fake evaluation" of the expression that you pass to it, and return gives you the size of the type of the expression? Well **C++11** adds a new operator called **decltype**. [decltype](http://en.cppreference.com/w/cpp/language/decltype) gives you the type of the of the expression it will evaluate. As I am kind, I won't let you google an example and give it to you directly:
@@ -419,16 +419,20 @@ C++11 also came with a new way to do compile-time computations! The new keyword 
     test = testVar; // true_type has a constexpr converter operator, equivalent to: test = true;
 
 ####Blending time:
-In cooking, a good recipe requires to mix all the best ingredients in the right proportions. If you don't want to have a spaghetti code dating from 1998 for dinner, let's revisit our C++98 **hasSerialize** and **serialize** functions with "fresh" ingredients from 2011. Let's start by removing the rotting **reallyHas** trick with a tasty **decltype** and bake a bit of **std::true_type** instead of **sizeof**. After 15min in the oven (or fighting with a new headache), you will obtain:
+In cooking, a good recipe requires to mix all the best ingredients in the right proportions. If you don't want to have a spaghetti code dating from 1998 for dinner, let's revisit our C++98 **hasSerialize** and **serialize** functions with "fresh" ingredients from 2011. Let's start by removing the rotting **reallyHas** trick with a tasty **decltype** and bake a bit of **constexpr** instead of **sizeof**. After 15min in the oven (or fighting with a new headache), you will obtain:
 
-template <typename T, typename = void>
-struct has_toString
-  : std::false_type
-{ };
-template <typename T>
-struct has_toString<T, decltype((void)std::declval<T>().toString())>
-  : std::true_type
-{ };
+	:::c++
+	template <class T, typename /*Unused*/ = std::string>
+	struct hasSerialize : std::false_type
+	{
+
+	};
+
+	template <class T> struct
+	hasSerialize<T, decltype(std::declval<T>().serialize())> : std::true_type
+	{
+
+	};
 
 ####Other interesting features:
 	nullptr
@@ -437,3 +441,5 @@ struct has_toString<T, decltype((void)std::declval<T>().toString())>
 
 ### The supremacy of C++14:
 constrexpr and auto lambda/functions, enable_if_t
+
+Thanks to [Naav](https://github.com/Naav) and [Superboum](https://github.com/superboum) for theirs careful rereading and suggestions.
