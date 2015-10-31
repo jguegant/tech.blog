@@ -3,7 +3,6 @@ Date: 14:00 10-31-2015
 Modified: 14:00 10-18-2015
 Tags: C++11, C++14, TMP, meta programming
 Slug: sfinae-introduction
-Status: draft
 
 <!-- http://stackoverflow.com/questions/18570285/using-sfinae-to-detect-a-member-function -->
 ###Trivia:
@@ -51,7 +50,7 @@ For instance, in Python, using reflection, one can do the following:
 	print(serialize(b)) # output: I am a B.
 	print(serialize(c)) # output: I am a C.
 
-As you can see, during serialization, it comes pretty handy to be able to check if an object has an attribute and if to query the type of this attribute. In this case, it permits us to use the **serialize** method if available and fall back to the more generic method **str** otherwise. Powerful, isn't it? Well, we can do it **in plain C++**!
+As you can see, during serialization, it comes pretty handy to be able to check if an object has an attribute and to query the type of this attribute. In our case, it permits us to use the **serialize** method if available and fall back to the more generic method **str** otherwise. Powerful, isn't it? Well, we can do it **in plain C++**!
 
 Here is the **C++14** solution mentionned in **Boost.Hana** documentation, using **is_valid**:
 
@@ -119,7 +118,7 @@ As you can see, it only requires a bit more of boilerplate than Python, but not 
 Whether your compiler is a dinosaur, your boss refuses to pay for the latest Visual Studio license or you simply love archeology, this chapter will interest you. It's also interesting for the people stuck between C++11 and C++14. The solution in C++98 relies on 3 key concepts: **overload resolution**, **SFINAE** and the static behavior of **sizeof**. 
 
 ####Overload resolution:
-A simple function call like **f(obj);** in C++ activates a mechanism to figure out which **f** function shoud be called according to the argument **obj**. If a **set** of **f** functions could accept **obj** as an argument, the compiler must choose the most appropriate function, or in other words **resolve** the best **overload**! Here is a good cppreference page explaining the full process: [Overload resolution](http://en.cppreference.com/w/cpp/language/overload_resolution). The rule of thumb in this case is that the compiler picks *the candidate function whose parameters match the arguments most closely is the one that is called*. Nothing is better than a good example:
+A simple function call like "**f(obj);**"" in **C++** activates a mechanism to figure out which **f** function shoud be called according to the argument **obj**. If a **set** of **f** functions could accept **obj** as an argument, the compiler must choose the most appropriate function, or in other words **resolve** the best **overload**! Here is a good cppreference page explaining the full process: [Overload resolution](http://en.cppreference.com/w/cpp/language/overload_resolution). The rule of thumb in this case is *the compiler picks the candidate function whose parameters match the arguments most closely is the one that is called*. Nothing is better than a good example:
 
 	:::c++
 	void f(std::string s); // int can't be convert into a string.
@@ -128,7 +127,7 @@ A simple function call like **f(obj);** in C++ activates a mechanism to figure o
 
 	f(1); // Call f(int i);
 
-In C++ you also have some sink-hole functions that accept everything: the function templates that accept any kind of parameter (let's say T). But the true black-hole of your compiler, the devil variable vacuum, the oblivion of the forgotten types are the [variadic functions](http://en.cppreference.com/w/cpp/utility/variadic). Yes, exactly like the horrible C **printf**.
+In C++ you also have some sink-hole functions that accept everything. First, function templates accept any kind of parameter (let's say T). But the true black-hole of your compiler, the devil variable vacuum, the oblivion of the forgotten types are the [variadic functions](http://en.cppreference.com/w/cpp/utility/variadic). Yes, exactly like the horrible C **printf**.
 
 	:::c++
 	std::string f(...); // Variadic functions are so "untyped" that...
@@ -138,7 +137,7 @@ In C++ you also have some sink-hole functions that accept everything: the functi
 The fact that function templates are less generic than variadic functions is the first point you must remember!
 
 #### SFINAE:
-I am already teasing you with the power for already few paragraphs and here finally comes the explanation of this not so complex acronym. **SFINAE** stands for **S**ubstitution **F**ailure **I**s **N**ot **A**n **E**rror. In rough terms, a **substitution** is the mechanism that tries to replace the template parameters with the provided types or values. In some cases, if the **substitution** leads to an invalid code, the compiler shouldn't throw a massive amount of errors but simply continue to try the other available **overloads**. The **SFINAE** concept simply guaranties such a "sane" behavior in a "sane" compiler. For instance:
+I am already teasing you with the power for already few paragraphs and here finally comes the explanation of this not so complex acronym. **SFINAE** stands for **S**ubstitution **F**ailure **I**s **N**ot **A**n **E**rror. In rough terms, a **substitution** is the mechanism that tries to replace the template parameters with the provided types or values. In some cases, if the **substitution** leads to an invalid code, the compiler shouldn't throw a massive amount of errors but simply continue to try the other available **overloads**. The **SFINAE** concept simply guaranties such a "sane" behavior for a "sane" compiler. For instance:
 
 	:::c++
 	/*
@@ -154,7 +153,7 @@ I am already teasing you with the power for already few paragraphs and here fina
 
 	f(1); // Calls void f(...) { }
 
-All the expressions won't lead to a **SFINAE**. A broad rule would be to say that all the **substitution** out of the function/methods **body** are "safes". For a better list, please take a look at this [wiki page](http://en.cppreference.com/w/cpp/language/sfinae). For instance, a wrong substitution within a function **body** will lead to a horrible C++ template error:
+All the expressions won't lead to a **SFINAE**. A broad rule would be to say that all the **substitutions** out of the function/methods **body** are "safes". For a better list, please take a look at this [wiki page](http://en.cppreference.com/w/cpp/language/sfinae). For instance, a wrong substitution within a function **body** will lead to a horrible C++ template error:
 
 	:::c++
 	// The compiler will be really unhappy when it will later discover the call to hahahaICrash. 
@@ -175,12 +174,13 @@ One can for instance do:
 	// Thanks to the "fake evaluation" of the sizeof operator.
 	char arrayTest[sizeof(f())];
     std::cout << sizeof(f()) << std::endl; // Output 42.
-But wait! If we can manipulate some compile-time integers, couldn't we do some compile-time comparison? The answer is: absolutely yes my dear! Here we are:
+But wait! If we can manipulate some compile-time integers, couldn't we do some compile-time comparison? The answer is: absolutely yes, my dear reader! Here we are:
 
 	:::c++
-	typedef char yes;
-	typedef yes no[2];
+	typedef char yes; // Size: 1 byte.
+	typedef yes no[2]; // Size: 2 bytes.
 
+	// Two functions using our type with different size.
 	yes& f1();
 	no& f2();
 
@@ -228,7 +228,7 @@ Now we have all the tools to create a solution to check the existence of a metho
     std::cout << hasSerialize<B>::value << std::endl;
     std::cout << hasSerialize<C>::value << std::endl;
 
-The **reallyHas** struct is kinda tricky but necessary to ensure that serialize is a method and not a simple member of the type. You can do a lot of test on a type using variants of this solution (test a member, a sub-type...) and I suggest you to google a bit more about **SFINAE**. Note: if you truly want a pure compile-time constant and avoid some errors on old compilers, you can replace the last value evaluation by: "**enum { value = sizeof(test<T>(0)) == sizeof(yes) };**". 
+The **reallyHas** struct is kinda tricky but necessary to ensure that serialize is a method and not a simple member of the type. You can do a lot of test on a type using variants of this solution (test a member, a sub-type...) and I suggest you to google a bit more about **SFINAE** tricks. Note: if you truly want a pure compile-time constant and avoid some errors on old compilers, you can replace the last **value** evaluation by: "**enum { value = sizeof(test<T>(0)) == sizeof(yes) };**". 
 
 
 You might also wonder why it doesn't work with **inheritence**. **Inheritence** in C++ and **dynamic polymorphism** is a concept available at runtime, or in other words, a data that the compiler won't have and can't guess! However, compile time type inspection is much more efficient (0 impact at runtime) and almost as powerful as if it were at runtime.
@@ -302,7 +302,7 @@ It might be hard to accept, but the error raised by your compiler is absolutely 
 	    }
 	}
 
-Your compiler is really a good guy and won't drop any dead-branch, and obj must therefore have both a **serialize method** and a **to_string overload** in this case. The solution is to split the serialize function into two different functions: one where we solely use **obj.serialize()** and one where we use **to_string** according to **obj's type**. We come back to an earlier problem that we already solved, how to split according to a type? **SFINAE**, for sure! At that point we could re-work our **hasSerialize** function into a **serialize** function and make it return a std::string instead of compile time boolean. But we won't do it that way! It's cleaner to separate the **hasSerialize** test from its usage **serialize**.
+Your compiler is really a good guy and won't drop any dead-branch, and **obj** must therefore have both a **serialize method** and a **to_string overload** in this case. The solution consists in spliting the serialize function into two different functions: one where we solely use **obj.serialize()** and one where we use **to_string** according to **obj's type**. We come back to an earlier problem that we already solved, how to split according to a type? **SFINAE**, for sure! At that point we could re-work our **hasSerialize** function into a **serialize** function and make it return a **std::string** instead of compile time **boolean**. But we won't do it that way! It's cleaner to separate the **hasSerialize** test from its usage **serialize**.
 
 
 We need to find a clever **SFINAE** solution on the signature of "**template <class T\> std::string serialize(const T& obj)**". I bring you the last piece of the puzzle called **enable_if**.
@@ -347,7 +347,7 @@ Life is much easier in C++11, so let's see the beauty of this new standard!
 
 
 ###When C++11 came to our help:
-After the great century leap year in 2000, people were fairly optimistic about the coming years. Some even decided to design a new standard for the next generation of C++ coders like me! Not only this standard would ease **TMP** headaches (**T**emplate **M**eta **P**rogramming side-effects), but it would be available in the first decade, hence its code-name **C++0x**. Well, the standard sadly came the next decade (2011 ==> **C++11**), but it brought a lot of features interesting for the purpose of this article. Let's review them!
+After the great century leap year in 2000, people were fairly optimistic about the coming years. Some even decided to design a new standard for the next generation of **C++** coders like me! Not only this standard would ease **TMP** headaches (**T**emplate **M**eta **P**rogramming side-effects), but it would be available in the first decade, hence its code-name **C++0x**. Well, the standard sadly came the next decade (2011 ==> **C++11**), but it brought a lot of features interesting for the purpose of this article. Let's review them!
 
 ####decltype, declvar, auto & co:
 Do you remember that the **sizeof operator** does a "fake evaluation" of the expression that you pass to it, and return gives you the size of the type of the expression? Well **C++11** adds a new operator called **decltype**. [decltype](http://en.cppreference.com/w/cpp/language/decltype) gives you the type of the of the expression it will evaluate. As I am kind, I won't let you google an example and give it to you directly:
@@ -475,9 +475,10 @@ According to the Gregorian calendar in the upper-right corner of my XFCE environ
 Once again, let's explore the new features, and use them to build something wonderful! We will even recreate an **is_valid**, like I promised at the beggining of this article.
 
 #### auto & lambdas:
-Some cool features in **C++14** come from the relaxed usage of the **auto** keyword (the one used for type inference).
 
 ######Return type inference:
+Some cool features in **C++14** come from the relaxed usage of the **auto** keyword (the one used for type inference).
+
 Now, **auto** can be used on the return type of a function or a method. For instance:
 
 	:::c++
@@ -503,7 +504,7 @@ A useful example in our case would be:
     std::cout << l2(b) << std::endl; // Output: I am a B!
     std::cout << l3(b) << std::endl; // Output: I am a B!
 
-**C++14** brings a small change to the **lambdas** but with a big impact! **Lambdas** accept **auto parameters**: the parameter type is deduced according the argument. **Lambdas** consist in an object having an newly created **unnamed Functor type**, also called **closure type**. If a **lambda** has some **auto parameters**, its "Functor operator" **operator()** will be simply templated. Let's take a look:
+**C++14** brings a small change to the **lambdas** but with a big impact! **Lambdas** accept **auto parameters**: the parameter type is deduced according the argument. **Lambdas** are implemented as an object having an newly created **unnamed type**, also called **closure type**. If a **lambda** has some **auto parameters**, its "Functor operator" **operator()** will be simply templated. Let's take a look:
 
 	:::c++
 	// ***** Simple lambda unamed type *****
