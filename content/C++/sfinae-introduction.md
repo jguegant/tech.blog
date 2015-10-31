@@ -1,5 +1,5 @@
 Title: An introduction to C++'s SFINAE concept: compile-time introspection of a class member
-Date: 14:00 10-18-2015 
+Date: 14:00 10-31-2015 
 Modified: 14:00 10-18-2015
 Tags: C++11, C++14, TMP, meta programming
 Slug: sfinae-introduction
@@ -471,11 +471,24 @@ This solution is, in my own opinion, more sneaky! It relies on a not-so-famous-p
 I told you that this second solution hides a lot of complexity, and we still have a lot of C++11 features unexploited like **nullptr**, **lambda**, **r-values**. No worries, we are going to use some of them in **C++14**!
 
 ### The supremacy of C++14:
-According to my Gregorian calendar in the upper-right corner of my XFCE environment, we are in 2015! I can turn on the **C++14** compilation flag on my favorite compiler safely, isn't it? Well, I can with **clang** (is **MSVC** using a maya calendar?).
+According to the Gregorian calendar in the upper-right corner of my XFCE environment, we are in 2015! I can turn on the **C++14** compilation flag on my favorite compiler safely, isn't it? Well, I can with **clang** (is **MSVC** using a maya calendar?).
 Once again, let's explore the new features, and use them to build something wonderful! We will even recreate an **is_valid**, like I promised at the beggining of this article.
 
 #### auto & lambdas:
-C++11 introduced [lambdas](http://en.cppreference.com/w/cpp/language/lambda). A lambda has the following syntax: 
+Some cool features in **C++14** come from the relaxed usage of the **auto** keyword (the one used for type inference).
+
+######Return type inference:
+Now, **auto** can be used on the return type of a function or a method. For instance:
+
+	:::c++
+	auto myFunction() // Automagically figures out that myFunction returns ints.
+	{
+		return int();
+	}
+It works as long as the type is easily "guessable" by the compiler. We are coding in C++ after all, not OCaml! 
+
+######A feature for functional lovers:
+**C++11** introduced [lambdas](http://en.cppreference.com/w/cpp/language/lambda). A lambda has the following syntax: 
 
 	[capture-list](params) -> non-mandatory-return-type { ...body... }
 
@@ -484,25 +497,58 @@ A useful example in our case would be:
 	:::c++
 	auto l1 = [](B& b) { return b.serialize(); }; // No clear return type.
 	auto l3 = [](B& b) -> std::string { return b.serialize(); }; // Fixed return type.
-    auto l2 = [](B& b) -> decltype(b.serialize()) { return b.serialize(); }; // Return type dependant to B.
+    auto l2 = [](B& b) -> decltype(b.serialize()) { return b.serialize(); }; // Return type dependant to the B type.
 
     std::cout << l1(b) << std::endl; // Output: I am a B!
     std::cout << l2(b) << std::endl; // Output: I am a B!
     std::cout << l3(b) << std::endl; // Output: I am a B!
 
-**C++14** brings a small change to the **lambdas** but with a big impact! **Lambdas** accept **auto parameters**: the parameter type is deduced according the argument. **Lambdas** are just anonymous functions (paranoids? maybe), and **lambdas** with **auto parameters** are anonymous functions with anonymous templated types (even more incognito). Let's take a look:
+**C++14** brings a small change to the **lambdas** but with a big impact! **Lambdas** accept **auto parameters**: the parameter type is deduced according the argument. **Lambdas** consist in an object having an newly created **unnamed Functor type**, also called **closure type**. If a **lambda** has some **auto parameters**, its "Functor operator" **operator()** will be simply templated. Let's take a look:
 
 	:::c++
+	// ***** Simple lambda unamed type *****
+	auto l4 = [](int a, int b) { return a + b; };
+	std::cout << l4(4, 5) << std::endl; // Output 9.
+
+	// Equivalent to:
+	struct l4UnamedType
+	{
+		int operator(int a, int b)
+		{
+			return a + b;
+		}
+	};
+
+	l4UnamedType l4Equivalent = l4UnamedType();
+	std::cout << l4Equivalent(4, 5) << std::endl; // Output 9 too.
+
+
+
+	// ***** auto parameters lambda unnamed type *****
+
 	// b's type is automagically deduced!
-	auto l4 = [](auto& t) -> decltype(t.serialize()) { return b.serialize(); };
+	auto l5 = [](auto& t) -> decltype(t.serialize()) { return t.serialize(); };
 
-	// l4 is equivalent to a function like:
-	// template <typename T> auto l4(T& t) -> decltype(t.serialize()) { return b.serialize(); };
+    std::cout << l5(b) << std::endl; // Output: I am a B!
+    std::cout << l5(a) << std::endl; // Error: no member named 'serialize' in 'A'.
 
-    std::cout << l4(b) << std::endl; // Output: I am a B!
-    std::cout << l4(a) << std::endl; // Error: no member named 'serialize' in 'A'.
+    // Equivalent to:
+    struct l5UnamedType
+	{
+		template <typename T> auto operator(T& t) -> decltype(t.serialize()) // /!\ This signature is nice for a SFINAE!
+		{
+			return t.serialize();
+		}
+	};
 
-It should remind you the beggining of my initial solution:
+	l5UnamedType l5Equivalent = l5UnamedType();
+
+	std::cout << l5Equivalent(b) << std::endl; // Output: I am a B!
+    std::cout << l5Equivalent(a) << std::endl; // Error: no member named 'serialize' in 'A'.
+
+
+
+More than the **lambda** itself, we are interested by the generated **unnamed type**: its lambda **operator()** can be used as a SFINAE! And as you can see, writing a **lambda** is less cumbersome than writing the equivalent type. It should remind you the beggining of my initial solution:
 
 	:::c++
 	// Check if a type has a serialize method.
@@ -511,15 +557,156 @@ It should remind you the beggining of my initial solution:
 And the good new is that we have everything to recreate **is_valid**, right now!
 
 ####The making-of a valid **is_valid**:
+Now that we have a really stylish manner to generate a **unnamed types** with potential **SFINAE** properties using **lambdas**, we need to figure out how to use them! As you can see, **hana::is_valid** is a function that takes our lambda as a parameter and return a type. We will call the type returned by **is_valid** the **container**. The **container** will be in charge to keep the lambda's **unnamed type** for a later usage. Let's start by writing the **is_valid** function and its the **containter**:
 
-A first struct to remember the signature of the lambda!
-This struct operator() accept some arguments that will be matched with the lambda.
+	:::c++
+	template <typename UnnamedType> struct container
+	{
+		// Remembers UnnamedType.
+	};
+
+	template <typename UnnamedType> constexpr auto is_valid(const UnnamedType& t) 
+	{
+		// We used auto for the return type: it will be deduced here.
+	    return container<UnnamedType>();
+	}
+
+	auto test = is_valid([](const auto& t) -> decltype(t.serialize()) {})
+	// Now 'test' remembers the type of the lambda and the signature of its operator()!
+
+The next step consists at extending **container** with the operator **operator()** such as we can call it with an argument. This argument type will be tested against the **UnnamedType**! In order to do a test on the argument type, we can use once again a SFINAE on a reacreated 'UnnamedType' object! It gives us this solution:
+
+	:::c++
+	template <typename UnnamedType> struct container
+	{
+	// Let's put the test in private.
+	private:
+	    // We use std::declval to 'recreate' an object of 'UnnamedType'.
+	    // We use std::declval to also 'recreate' an object of type 'Param'.
+	    // We can use both of these recreated objects to test the validity!
+	    template <typename Param> constexpr auto testValidity(int /* unused */)
+	    -> decltype(std::declval<UnnamedType>()(std::declval<Param>()), std::true_type())
+	    {
+	        // If substitution didn't fail, we can return a true_type.
+	        return std::true_type();
+	    }
+
+	    template <typename Param> constexpr std::false_type testValidity(...)
+	    {
+	        // Our sink-hole returns a false_type.
+	        return std::false_type();
+	    }
+
+	public:
+	    // A public operator() that accept the argument we wish to test onto the UnnamedType.
+	    // Notice that the return type is automatic!
+	    template <typename Param> constexpr auto operator()(const Param& p)
+	    {
+	        // The argument is forwarded to one of the two overloads.
+	        // The SFINAE on the 'true_type' will come into play to dispatch.
+	        // Once again, we use the int for the precedence.
+	        return testValidity<Param>(int());
+	    }
+	};
+
+	template <typename UnnamedType> constexpr auto is_valid(const UnnamedType& t) 
+	{
+		// We used auto for the return type: it will be deduced here.
+	    return container<UnnamedType>();
+	}
+
+	// Check if a type has a serialize method.
+	auto hasSerialize = is_valid([](auto&& x) -> decltype(x.serialize()) { });
+
+If you are a bit lost at that point, I suggest you take your time and re-read all the previous example. You have all the weapons you need, now fight **C++**!
+
+Our **hasSerialize** now takes an argument, we therefore need some changes for our serialize function. We can simply post-pone the return type using **auto** and use the argument in a **decltype** as we learn. Which gives us:
+
+	:::c++
+	// Notice how I simply swapped the return type on the right?
+	template <class T> auto serialize(T& obj) 
+	-> typename std::enable_if<decltype(hasSerialize(obj))::value, std::string>::type
+	{
+	    return obj.serialize();
+	}
+
+	template <class T> auto serialize(T& obj) 
+	-> typename std::enable_if<!decltype(hasSerialize(obj))::value, std::string>::type
+	{
+	    return to_string(obj);
+	}
+
+**FINALLY!!!** We do have a working **is_valid** and we could use it for serialization! If I were as vicious as my SFINAE tricks, I would let you copy each code pieces to recreate a fully working solution. But today, Halloween's spirit is with me and here is [gist](https://gist.github.com/Jiwan/7a586c739a30dd90d259). Hey, hey! Don't close this article so fast! If you are true a warrior, you can read the last part!
 
 
-####Opening:
-Only works with one type. Parameters packs!!!
-TODO: if_.
+####For the fun:
+There are few things I didn't tell you, on purpose. This article would otherwise be twice longer, I fear. I highly suggest you to google a bit more about what I am going to speak about.
+
+Firstly, if you wish to have a solution that works with the **Boost.Hana** static **if_**, you need to change the return type of our **testValidity** methods by Hana's equivalents, like the following:
+
+	:::c++
+	template <typename Param> constexpr auto test_validity(int /* unused */)
+    -> decltype(std::declval<UnnamedType>()(std::declval<Param>()), boost::hana::true_c)
+    {
+        // If substitution didn't fail, we can return a true_type.
+        return boost::hana::true_c;
+    }
+
+    template <typename Param> constexpr decltype(boost::hana::false_c) test_validity(...)
+    {
+        // Our sink-hole returns a false_type.
+        return boost::hana::false_c;
+    }
+The static **if_** implementation is really interesting, but at least as hard as our **is_valid** problem solved in this article. I might dedicate another article about it, one day!
 
 
 
-Thanks to [Naav](https://github.com/Naav) and [Superboum](https://github.com/superboum) for their careful rereading and theirs suggestions.
+Did you noticed that we only check one argument at a time? Couldn't we do something like:
+
+	:::c++
+	auto test = is_valid([](auto&& a, auto&& b) -> decltype(a.serialize(), b.serialize()) { });
+	A a;
+	B b;
+
+	std::cout << test(a, b) << std::endl;
+
+Actually we can, using some [parameter packs](http://en.cppreference.com/w/cpp/language/parameter_pack). Here is the solution:
+	
+	:::c++
+	template <typename UnnamedType> struct container
+	{
+	// Let's put the test in private.
+	private:
+	    // We use std::declval to 'recreate' an object of 'UnnamedType'.
+	    // We use std::declval to also 'recreate' an object of type 'Param'.
+	    // We can use both of these recreated objects to test the validity!
+	    template <typename... Params> constexpr auto test_validity(int /* unused */)
+	    -> decltype(std::declval<UnnamedType>()(std::declval<Params>()...), std::true_type())
+	    {
+	        // If substitution didn't fail, we can return a true_type.
+	        return std::true_type();
+	    }
+
+	    template <typename... Params> constexpr std::false_type test_validity(...)
+	    {
+	        // Our sink-hole returns a false_type.
+	        return std::false_type();
+	    }
+
+	public:
+	    // A public operator() that accept the argument we wish to test onto the UnnamedType.
+	    // Notice that the return type is automatic!
+	    template <typename... Params> constexpr auto operator()(const Params& ...)
+	    {
+	        // The argument is forwarded to one of the two overloads.
+	        // The SFINAE on the 'true_type' will come into play to dispatch.
+	        return test_validity<Params...>(int());
+	    }
+	};
+
+Finally, why are using the notation "**&&**" for the **lambdas** parameters? Well, these are called **r-value references**. It's a really complex topic, and if you are interested, here is good [article](http://thbecker.net/articles/rvalue_references/section_01.html) about it. You need to use "**auto&&**" due to the way **declval** is working in our **is_valid** implementation!
+
+#### Notes:
+This is my first serious article about **C++** on the web and I hope you enjoyed it! I would be glad if you have any suggestions or questions and that you wish to share with me in the commentaries.
+
+Anyway, thanks to [Naav](https://github.com/Naav) and [Superboum](https://github.com/superboum) for rereading this article and theirs suggestions.
