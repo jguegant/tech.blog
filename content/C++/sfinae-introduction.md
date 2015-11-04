@@ -6,7 +6,9 @@ Slug: sfinae-introduction
 
 <!-- http://stackoverflow.com/questions/18570285/using-sfinae-to-detect-a-member-function -->
 ###Trivia:
-As a C++ enthusiast, I usually follow the annual C++ conference [cppconf](http://cppcon.org/) or at least try to keep myself up-to-date with the major events that happen there. One way to catch up, if you can't afford a plane ticket or the ticket, is to follow the [youtube channel](https://www.youtube.com/channel/UCMlGfpWw-RUdWX_JbLCukXg) dedicated to this conference. This year, I was impressed by **Louis Dionne** talk entitled "C++ Metaprogramming: A Paradigm Shift". One feature called **is_valid** that can be found in Louis's [Boost.Hana](http://ldionne.com/hana/) library particulary caught my attention. This genious **is_valid** function heavily rely on an even more "magic" C++ programming technique coined with the term **SFINAE** discovered at the end of the previous century. If this acronym doesn't speak to you, don't be scared, we are going to dive straight in the subject.
+As a C++ enthusiast, I usually follow the annual C++ conference [cppconf](http://cppcon.org/) or at least try to keep myself up-to-date with the major events that happen there. One way to catch up, if you can't afford a plane ticket or the ticket, is to follow the [youtube channel](https://www.youtube.com/channel/UCMlGfpWw-RUdWX_JbLCukXg) dedicated to this conference. This year, I was impressed by **Louis Dionne** talk entitled "C++ Metaprogramming: A Paradigm Shift". One feature called **is_valid** that can be found in Louis's [Boost.Hana](http://github.com/boostorg/hana) library particulary caught my attention. This genious **is_valid** function heavily rely on an even more "magic" C++ programming technique coined with the term **SFINAE** discovered at the end of the previous century. If this acronym doesn't speak to you, don't be scared, we are going to dive straight in the subject.
+
+Note: for the sake of your sanity and *errare humanum est*, this article might not be 100% accurate!
 
 ###Introspection in C++?
 Before explaining what is **SFINAE**, let's explore one of its main usage: **introspection**. As you might be aware, C++ doesn't excel when it comes to examine the type or properties of an object at runtime. The best ability provided by default would be [RTTI](https://en.wikipedia.org/wiki/Run-time_type_information). Not only **RTTI** isn't always available, but it also gives you barely more than the current type of the manipulated object. Dynamic languages or those having **reflection** on the other hand are really convenient in some situations like **serialization**.
@@ -131,10 +133,12 @@ In C++ you also have some sink-hole functions that accept everything. First, fun
 
 	:::c++
 	std::string f(...); // Variadic functions are so "untyped" that...
-	template <typename T> std::string f(const T& t); // ...even a templated function got the precedence!
+	template <typename T> std::string f(const T& t); // ...this templated function got the precedence!
 
 	f(1); // Call the templated function version of f.
 The fact that function templates are less generic than variadic functions is the first point you must remember!
+
+Note: A **templated function** can actually be more precise than a **normal function**. However, in case of a draw, the **normal function** will have the precedence. 
 
 #### SFINAE:
 I am already teasing you with the power for already few paragraphs and here finally comes the explanation of this not so complex acronym. **SFINAE** stands for **S**ubstitution **F**ailure **I**s **N**ot **A**n **E**rror. In rough terms, a **substitution** is the mechanism that tries to replace the template parameters with the provided types or values. In some cases, if the **substitution** leads to an invalid code, the compiler shouldn't throw a massive amount of errors but simply continue to try the other available **overloads**. The **SFINAE** concept simply guaranties such a "sane" behavior for a "sane" compiler. For instance:
@@ -142,11 +146,11 @@ I am already teasing you with the power for already few paragraphs and here fina
 	:::c++
 	/*
 	 The compiler will try this overload since it's less generic than the variadic.
-	 T will be replace by int which gives us void f(int::B* b);
-	 int doesn't have a B sub-type, but the compiler doesn't throw a bunch of errors.
-	 It simply tries the next overload.
+	 T will be replace by int which gives us void f(const int& t, int::iterator* b = nullptr);
+	 int doesn't have an iterator sub-type, but the compiler doesn't throw a bunch of errors.
+	 It simply tries the next overload. 
 	*/
-	template <typename T> void f(typename T::B* b) { }
+	template <typename T> void f(const T& t, typename T::iterator* it = nullptr) { }
 
 	// The sink-hole.
 	void f(...) { }
@@ -345,11 +349,13 @@ As you can see, we can trigger a substitution failure according to a compile tim
 Two details worth being noted! Firstly we use **enable_if** on the return type, in order to keep the paramater deduction, otherwise we would have to specify the type explicitely "**serialize<A\>(a)**". Second, even the version using **to_string** must use the **enable_if**, otherwise **serialize(b)** would have two potential overloads available and raise an ambiguity. If you want to check the full code of this C++98 version, here is a [gist](https://gist.github.com/Jiwan/2573fc47e4fa5025306b).
 Life is much easier in C++11, so let's see the beauty of this new standard!
 
+Note: it's also important to know that this code creates a **SFINAE** on an expression ("**&C::serialize**"). Whilst this feature wasn't required by the **C++98** standard, it was already in use depending on your compiler. It trully became a safe choice in **C++11**.
+
 
 ###When C++11 came to our help:
 After the great century leap year in 2000, people were fairly optimistic about the coming years. Some even decided to design a new standard for the next generation of **C++** coders like me! Not only this standard would ease **TMP** headaches (**T**emplate **M**eta **P**rogramming side-effects), but it would be available in the first decade, hence its code-name **C++0x**. Well, the standard sadly came the next decade (2011 ==> **C++11**), but it brought a lot of features interesting for the purpose of this article. Let's review them!
 
-####decltype, declvar, auto & co:
+####decltype, declval, auto & co:
 Do you remember that the **sizeof operator** does a "fake evaluation" of the expression that you pass to it, and return gives you the size of the type of the expression? Well **C++11** adds a new operator called **decltype**. [decltype](http://en.cppreference.com/w/cpp/language/decltype) gives you the type of the of the expression it will evaluate. As I am kind, I won't let you google an example and give it to you directly:
 
 	:::c++
@@ -357,7 +363,7 @@ Do you remember that the **sizeof operator** does a "fake evaluation" of the exp
     decltype(b.serialize()) test = "test"; // Evaluate b.serialize(), which is typed as std::string.
     // Equivalent to std::string test = "test";
 
-[declvar](http://en.cppreference.com/w/cpp/utility/declval) is an utility that gives you a "fake reference" to an object of a type that couldn't be easily construct. **declvar** is really handy for our **SFINAE** constructions. **cppreference** example is really straightforward, so here is a copy:
+[declval](http://en.cppreference.com/w/cpp/utility/declval) is an utility that gives you a "fake reference" to an object of a type that couldn't be easily construct. **declval** is really handy for our **SFINAE** constructions. **cppreference** example is really straightforward, so here is a copy:
 
 	:::c++
 	struct Default {
@@ -409,7 +415,7 @@ C++11 also came with a new way to do compile-time computations! The new keyword 
 	// Will be replace by a good compiler by:
 	// int i = 120;
 
-**constexpr** gave birth to two pre-defined types in the STL: **std::true_type** & **std::false_type**. As their name suggest, these types encapsulate a constexpr boolean "true" and a constrexpr boolean "false". Their most important property is that a class or a struct can inherit from them. For instance:
+**constexpr** increased the usage of **std::true_type** & **std::false_type** from the STL. As their name suggest, these types encapsulate a constexpr boolean "true" and a constrexpr boolean "false". Their most important property is that a class or a struct can inherit from them. For instance:
 
 	:::c++
 	struct testStruct : std::true_type { }; // Inherit from the true type.
@@ -466,7 +472,7 @@ Another C++11 solution described in **Boost.Hanna** documentation and using **st
 
 	};
 
-This solution is, in my own opinion, more sneaky! It relies on a not-so-famous-property of default template parameters. But if your soul is already (stack-)corrupted, you may be aware that the **default parameters** are propagated in the **specialisations**. So when we use **hasSerialize<OurType\>::value**, the default parameter comes into play and we are actually looking for **hasSerialize<OurType, std::string\>::value** both on the **primary template** and the **specialisation**. In the meantime, the **substitution** and the evaluation of **decltype** are processed and our **specialisation** has the signature **hasSerialize<OurType, std::string\>** if **OurType** has a **serialize** method that returns a **std::string**, otherwise the substitution fails. The **specialisation** has therefore the precedence in the good cases. Here is a [gist](https://gist.github.com/Jiwan/160a64a5d1d25e4bdf6b) you can play with!
+This solution is, in my own opinion, more sneaky! It relies on a not-so-famous-property of default template parameters. But if your soul is already (stack-)corrupted, you may be aware that the **default parameters** are propagated in the **specialisations**. So when we use **hasSerialize<OurType\>::value**, the default parameter comes into play and we are actually looking for **hasSerialize<OurType, std::string\>::value** both on the **primary template** and the **specialisation**. In the meantime, the **substitution** and the evaluation of **decltype** are processed and our **specialisation** has the signature **hasSerialize<OurType, std::string\>** if **OurType** has a **serialize** method that returns a **std::string**, otherwise the substitution fails. The **specialisation** has therefore the precedence in the good cases. One will be able to use the [std::void_t](http://en.cppreference.com/w/cpp/types/void_t) C++17 helper in these cases. Anyway, here is a [gist](https://gist.github.com/Jiwan/160a64a5d1d25e4bdf6b) you can play with!
 
 I told you that this second solution hides a lot of complexity, and we still have a lot of C++11 features unexploited like **nullptr**, **lambda**, **r-values**. No worries, we are going to use some of them in **C++14**!
 
@@ -496,7 +502,7 @@ It works as long as the type is easily "guessable" by the compiler. We are codin
 A useful example in our case would be:
 
 	:::c++
-	auto l1 = [](B& b) { return b.serialize(); }; // No clear return type.
+	auto l1 = [](B& b) { return b.serialize(); }; // Return type figured-out by the return statement.
 	auto l3 = [](B& b) -> std::string { return b.serialize(); }; // Fixed return type.
     auto l2 = [](B& b) -> decltype(b.serialize()) { return b.serialize(); }; // Return type dependant to the B type.
 
@@ -514,7 +520,7 @@ A useful example in our case would be:
 	// Equivalent to:
 	struct l4UnamedType
 	{
-		int operator(int a, int b)
+		int operator()(int a, int b) const
 		{
 			return a + b;
 		}
@@ -536,7 +542,7 @@ A useful example in our case would be:
     // Equivalent to:
     struct l5UnamedType
 	{
-		template <typename T> auto operator(T& t) -> decltype(t.serialize()) // /!\ This signature is nice for a SFINAE!
+		template <typename T> auto operator()(T& t) const -> decltype(t.serialize()) // /!\ This signature is nice for a SFINAE!
 		{
 			return t.serialize();
 		}
@@ -643,71 +649,73 @@ Our **hasSerialize** now takes an argument, we therefore need some changes for o
 ####For the fun:
 There are few things I didn't tell you, on purpose. This article would otherwise be twice longer, I fear. I highly suggest you to google a bit more about what I am going to speak about.
 
-Firstly, if you wish to have a solution that works with the **Boost.Hana** static **if_**, you need to change the return type of our **testValidity** methods by Hana's equivalents, like the following:
+* Firstly, if you wish to have a solution that works with the **Boost.Hana** static **if_**, you need to change the return type of our **testValidity** methods by Hana's equivalents, like the following:
 
-	:::c++
-	template <typename Param> constexpr auto test_validity(int /* unused */)
-    -> decltype(std::declval<UnnamedType>()(std::declval<Param>()), boost::hana::true_c)
-    {
-        // If substitution didn't fail, we can return a true_type.
-        return boost::hana::true_c;
-    }
-
-    template <typename Param> constexpr decltype(boost::hana::false_c) test_validity(...)
-    {
-        // Our sink-hole returns a false_type.
-        return boost::hana::false_c;
-    }
-The static **if_** implementation is really interesting, but at least as hard as our **is_valid** problem solved in this article. I might dedicate another article about it, one day!
-
-
-
-Did you noticed that we only check one argument at a time? Couldn't we do something like:
-
-	:::c++
-	auto test = is_valid([](auto&& a, auto&& b) -> decltype(a.serialize(), b.serialize()) { });
-	A a;
-	B b;
-
-	std::cout << test(a, b) << std::endl;
-
-Actually we can, using some [parameter packs](http://en.cppreference.com/w/cpp/language/parameter_pack). Here is the solution:
-	
-	:::c++
-	template <typename UnnamedType> struct container
-	{
-	// Let's put the test in private.
-	private:
-	    // We use std::declval to 'recreate' an object of 'UnnamedType'.
-	    // We use std::declval to also 'recreate' an object of type 'Param'.
-	    // We can use both of these recreated objects to test the validity!
-	    template <typename... Params> constexpr auto test_validity(int /* unused */)
-	    -> decltype(std::declval<UnnamedType>()(std::declval<Params>()...), std::true_type())
+		:::c++
+		template <typename Param> constexpr auto test_validity(int /* unused */)
+	    -> decltype(std::declval<UnnamedType>()(std::declval<Param>()), boost::hana::true_c)
 	    {
 	        // If substitution didn't fail, we can return a true_type.
-	        return std::true_type();
+	        return boost::hana::true_c;
 	    }
 
-	    template <typename... Params> constexpr std::false_type test_validity(...)
+	    template <typename Param> constexpr decltype(boost::hana::false_c) test_validity(...)
 	    {
 	        // Our sink-hole returns a false_type.
-	        return std::false_type();
+	        return boost::hana::false_c;
 	    }
+	The static **if_** implementation is really interesting, but at least as hard as our **is_valid** problem solved in this article. I might dedicate another article about it, one day!
 
-	public:
-	    // A public operator() that accept the argument we wish to test onto the UnnamedType.
-	    // Notice that the return type is automatic!
-	    template <typename... Params> constexpr auto operator()(const Params& ...)
-	    {
-	        // The argument is forwarded to one of the two overloads.
-	        // The SFINAE on the 'true_type' will come into play to dispatch.
-	        return test_validity<Params...>(int());
-	    }
-	};
 
-Finally, why are using the notation "**&&**" for the **lambdas** parameters? Well, these are called **r-value references**. It's a really complex topic, and if you are interested, here is good [article](http://thbecker.net/articles/rvalue_references/section_01.html) about it. You need to use "**auto&&**" due to the way **declval** is working in our **is_valid** implementation!
+
+* Did you noticed that we only check one argument at a time? Couldn't we do something like:
+
+		:::c++
+		auto test = is_valid([](auto&& a, auto&& b) -> decltype(a.serialize(), b.serialize()) { });
+		A a;
+		B b;
+
+		std::cout << test(a, b) << std::endl;
+
+	Actually we can, using some [parameter packs](http://en.cppreference.com/w/cpp/language/parameter_pack). Here is the solution:
+		
+		:::c++
+		template <typename UnnamedType> struct container
+		{
+		// Let's put the test in private.
+		private:
+		    // We use std::declval to 'recreate' an object of 'UnnamedType'.
+		    // We use std::declval to also 'recreate' an object of type 'Param'.
+		    // We can use both of these recreated objects to test the validity!
+		    template <typename... Params> constexpr auto test_validity(int /* unused */)
+		    -> decltype(std::declval<UnnamedType>()(std::declval<Params>()...), std::true_type())
+		    {
+		        // If substitution didn't fail, we can return a true_type.
+		        return std::true_type();
+		    }
+
+		    template <typename... Params> constexpr std::false_type test_validity(...)
+		    {
+		        // Our sink-hole returns a false_type.
+		        return std::false_type();
+		    }
+
+		public:
+		    // A public operator() that accept the argument we wish to test onto the UnnamedType.
+		    // Notice that the return type is automatic!
+		    template <typename... Params> constexpr auto operator()(const Params& ...)
+		    {
+		        // The argument is forwarded to one of the two overloads.
+		        // The SFINAE on the 'true_type' will come into play to dispatch.
+		        return test_validity<Params...>(int());
+		    }
+		};
+
+* This code is working even if my types are incomplete, for instance a forward declaration, or a normal declaration but with a missing definition. What can I do? Well, you can insert a check on the size of your type either in the **SFINAE** construction or before calling it: "**static_assert( sizeof( T ), "type is incomplete." );**".
+
+* Finally, why are using the notation "**&&**" for the **lambdas** parameters? Well, these are called **forwarding references**. It's a really complex topic, and if you are interested, here is good [article](http://thbecker.net/articles/rvalue_references/section_01.html) about it. You need to use "**auto&&**" due to the way **declval** is working in our **is_valid** implementation!
 
 #### Notes:
 This is my first serious article about **C++** on the web and I hope you enjoyed it! I would be glad if you have any suggestions or questions and that you wish to share with me in the commentaries.
 
-Anyway, thanks to [Naav](https://github.com/Naav) and [Superboum](https://github.com/superboum) for rereading this article and theirs suggestions.
+Anyway, thanks to [Naav](https://github.com/Naav) and [Superboum](https://github.com/superboum) for rereading this article and theirs suggestions. Few suggestions were also provided by the reddit community or in the commentaries of this post, thanks a lot guys!
