@@ -5,6 +5,6 @@ I could directly dive into some funky tricks to implement **stackless coroutines
 
 This post will focus on these fundamentals questions, and it will a base for some coming topics. I would not dare to simply throw you **spaghetti code**, so let's first explain these concepts using **pizzas**.
 
-#### **Apache Hut** vs Nginx O' Peperoni:
+#### **Apache Hut** vs Nginx O' Pepperoni:
 
 #### Real code:
