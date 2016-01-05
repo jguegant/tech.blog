@@ -3,7 +3,7 @@ Computer programming is a science, or even an art, and as such its community fol
 
 I could directly dive into some funky tricks to implement **stackless coroutines** in C++, or explain **epoll** in details. Yet the very basic internals of such technologies are pretty mysterious for some of us, when it actually has a very straightforward explanation. Why is it more efficient than old-fashioned technologies? There must be a thread somewhere? Where is the loop then?
 
-This post will focus on these fundamentals questions, and it will a base for some coming topics. I would not dare to simply throw you **spaghetti code**, so let's first explain this concept using **pizzas**.
+This post will focus on these fundamentals questions, and it will a base for some coming topics. I would not dare to simply throw you **spaghetti code**, so let's first explain these concepts using **pizzas**.
 
 #### **Apache Hut** vs Nginx O' Peperoni:
 
