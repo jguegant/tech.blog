@@ -75,3 +75,6 @@ SITEMAP = {
         'pages': 'monthly'
     }
 }
+
+# Static folders.
+STATIC_PATHS = ['images',]
