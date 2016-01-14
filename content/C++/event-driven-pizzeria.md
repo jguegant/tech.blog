@@ -37,7 +37,7 @@ Let's take a look on how is a phone request served in **Apach' Hut**:
 
 Did you catch any problem in this strategy? Anything else than the fact that a traditional pizza would be burn after 20min at 210°C? 
 
-Effectively this management is inefficient as Apach' cooks spend a good part of their days doing nothing more than waiting, they are truly **idle**. On a good day, they might work **15 minutes** per hour, it gives them enough time to **sleep**. Dare not to say that they are sloth, they are actually very skillful employees limited by the the company's strategy.
+Effectively this management is inefficient as Apach' cooks spend a good part of their days doing nothing more than waiting, they are truly **idle**. On a good day, they might work **15 minutes** per hour, it gives them enough time to **sleep** half of the day. Dare not to say that they are sloth, they are actually very skillful employees limited by the company's strategy, a strategy issued by the administration.
 
 #### **Ngin O' Pepperonix** solution:
 
