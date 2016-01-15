@@ -39,6 +39,11 @@ Did you catch any problem in this strategy? Anything else than the fact that a t
 
 Effectively this management is inefficient as Apach' cooks spend a good part of their days doing nothing more than waiting, they are truly **idle**. On a good day, they might work **15 minutes** per hour, it gives them enough time to **sleep** half of the day. Dare not to say that they are sloth, they are actually very skillful employees limited by the company's strategy, a strategy issued by the administration.
 
+If this workload management seems counterintuitive, it actually reflects the architecture behind a synchronous web-server. Let's see how we could compare Apach' Hut with their online infrastructure.
+
+##### In the datacenter:
+
+
 #### **Ngin O' Pepperonix** solution:
 
 ![Ngin O' Pepperonix Strategy Scheme]({filename}/images/nginxopepperoni.svg)
