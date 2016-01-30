@@ -3,6 +3,7 @@ Date: 14:00 01-10-2016
 Modified: 14:00 01-10-2016
 Tags: C++14, Python, event-driven, asynchronous architecture
 Slug: asynchronous-pizzeria
+Status: draft
 
 ## About this post:
 Computer programming is a science, or even an art, and as such its community follows trends for better or worse. Today, I am highly positive in our future so let's speak about the new holy grail of any back-end developer, the panacea for web servers: an **asynchronous** **event-driven** architecture. Forget about your old synchronous habits, now we enter in the era of **non-blocking I/O** models, **coroutines**, **callbacks**, hacky **generators**, and all-mighty **asynchronous calls**. [Node.js](https://nodejs.org/en/) is conquering the market partly due to its full embrace of such an architecture. Google's latest child, the [Go](https://golang.org/) Programming Language, was designed around this concept. Why would we not do the same?
