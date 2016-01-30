@@ -34,6 +34,11 @@ We could have used a **std::map** with [Boost.Variant](http://www.boost.org/doc/
 Note that some **tuples** implementations were already available before **C++11**, notably in [boost](http://www.boost.org/doc/libs/1_60_0/libs/tuple/doc/tuple_users_guide.html). **C++11** variadic templates are just very handy, as you will see, to construct such class.
 
 ### A teaser for my repository class:
-To keep your attention for the rest of this post, here is a show off.
+To keep your attention for the rest of this post, here is my **thread-safe multi-type map** in action:
 
-Naming is weird, if any got a better idea, please submit.
+First and foremost, its name **repository** might not be well-suited for its responsibility. If you native language is the same as shakespeare and come-up with a better term, please feel free to submit it. In our internal usage, **config repository** sounded great!
+
+As you can see, I am using types as a key for accessing elements in this **repository**. In case of contetion, I use two keys...
+. I use **std::shared_ptr** for . We will see later on why. 
+
+Show how we use it: class ConfigA, class ConfigB, passed in a context along the hierarchy class.
