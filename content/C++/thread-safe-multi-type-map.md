@@ -17,10 +17,11 @@ We could have used a **std::map** with [Boost.Variant](http://www.boost.org/doc/
 **C++11** brings another collection type called **std::tuple**. It permits to store a set of elements of **heterogeneous types**. Take a look at this short example:
 	
 	:::c++
-	auto myTuple = std::make_tuple("Foo", 1337, 0xb0b);
+	auto myTuple = std::make_tuple("Foo", 1337, 42);
 
     std::cout << std::get<0>(myTuple) << std::endl; // Access element by index: "Foo"
     std::cout << std::get<1>(myTuple) << std::endl; // Access element by index: 1337
+    std::cout << std::get<2>(myTuple) << std::endl; // Access element by index: 42
     std::cout << std::get<const char*>(myTuple) << std::endl; // Access element by type: "Foo"
 
     // compilation error: static_assert failed "tuple_element index out of range"
@@ -29,16 +30,69 @@ We could have used a **std::map** with [Boost.Variant](http://www.boost.org/doc/
     // compilation error: static_assert failed "type can only occur once in type list"
     std::cout << std::get<int>(myTuple) << std::endl;
 
-**Tuples** are that kind of **C++11** jewelry that should decide your old-fashioned boss to upgrade your team's compiler (and his ugly tie). Not only I could store a **const char* ** and two **ints** without any compiling error, but I could also access them using compile-time mechanisms. In some way, you can see tuples as a compile-time map using indexes or types as keys to reach its elements. You cannot use an index out of bands, it will be catched at compile-time anyway! Sadly, using a type as a way to retrieve an element is only possible if the type is unique in the **tuple**. In my work project, we do have few config objects sharing the same class. Anyway, tuples weren't feeting our needs regarding thread safety and update events. Let's see what we could create using tasty **tuples** as an inspiration.
+**Tuples** are that kind of **C++11** jewelry that should decide your old-fashioned boss to upgrade your team's compiler (and his ugly tie). Not only I could store a **const char* ** and two **ints** without any compiling error, but I could also access them using compile-time mechanisms. In some way, you can see tuples as a compile-time map using indexes or types as keys to reach its elements. You cannot use an index out of bands, it will be catched at compile-time anyway! Sadly, using a type as a key to retrieve an element is only possible if the type is unique in the **tuple**. In my work project, we do have few config objects sharing the same class. Anyway, tuples weren't feeting our needs regarding thread safety and update events. Let's see what we could create using tasty **tuples** as an inspiration.
 
-Note that some **tuples** implementations were already available before **C++11**, notably in [boost](http://www.boost.org/doc/libs/1_60_0/libs/tuple/doc/tuple_users_guide.html). **C++11** variadic templates are just very handy, as you will see, to construct such class.
+Note that some **tuples** implementations were already available before **C++11**, notably in [boost](http://www.boost.org/doc/libs/1_60_0/libs/tuple/doc/tuple_users_guide.html). **C++11** variadic templates are just very handy, as you will see, to construct such a class.
 
 ### A teaser for my repository class:
 To keep your attention for the rest of this post, here is my **thread-safe multi-type map** in action:
 
-First and foremost, its name **repository** might not be well-suited for its responsibility. If you native language is the same as shakespeare and come-up with a better term, please feel free to submit it. In our internal usage, **config repository** sounded great!
+    :::c++
 
-As you can see, I am using types as a key for accessing elements in this **repository**. In case of contetion, I use two keys...
-. I use **std::shared_ptr** for . We will see later on why. 
+    #include <iostream>
+    #include <memory>
+    #include <string>
+
+    #include "repository.hpp"
+
+    // Incomplete types used as compile-time keys.
+    struct Key1;
+    struct Key2;
+
+    // Create a type for our repository.
+    using MyRepository = Repository
+        <
+            RepositorySlot<std::string>, // One slot for std::string.
+            RepositorySlot<int, Key1>, // Two slots for int.
+            RepositorySlot<int, Key2> // Must be differentiate using "type keys" (Key1, Key2).
+        >;
+
+    int main()
+    {
+        MyRepository myRepository;
+
+        myRepository.emplace<std::string>("test"); // Construct the shared_ptr within the repository.
+        myRepository.emplace<int, Key1>(1337);
+        myRepository.set<int, Key2>(std::make_shared<int>(42)); // Set the shared_ptr manually.
+
+        // Note: I use '*' as get returns a shared_ptr.
+        std::cout << *myRepository.get<std::string>() << std::endl; // Print "test".
+        std::cout << *myRepository.get<int, Key1>() << std::endl; // Print 1337.
+        std::cout << *myRepository.get<int, Key2>() << std::endl; // Print 42.
+
+        std::cout << *myRepository.get<int>() << std::endl;
+        //             ^^^ Compilation error: which int shall be selected? Key1 or Key2?
+
+        auto watcher = myRepository.getWatcher<std::string>(); // Create a watcher object to observe changes on std::string.
+        std::cout << watcher->hasBeenChanged() << std::endl; // 0: no changes since the watcher creation.
+
+        myRepository.emplace<std::string>("yo"); // Emplace a new value into the std::string slot.
+        std::cout << watcher->hasBeenChanged() << std::endl; // 1: the std::string slot has been changed.
+
+        std::cout << *watcher->get() << std::endl; // Poll the value and print "yo".
+        std::cout << watcher->hasBeenChanged() << std::endl; // 0: no changes since the last polling.
+
+        return EXIT_SUCCESS;
+    }
+
+
+First and foremost, its name **repository** might not be well-suited for its responsibility. If your native language is the same as shakespeare and come-up with a better term, please feel free to submit it. In our internal usage, **config repository** sounded great!
+
+I start by describing the slots necessary for my application by creating a new type **MyRepository** using a [type alias](http://en.cppreference.com/w/cpp/language/type_alias). As you can see, I use the type of the slots as a key for accessing elements. But in case of contention, I must use a second key: an "empty type" ; like **Key1** and **Key2** in this example.
+If using types as keys seems odd for you, fear not! Here is the most rational explanation I can share with you: we are trying to benefit from our "know-it-all compiler". Your compiler is mainly manipulating types, one can change its flow using these types during the compilation process. Note that these structs are not even complete (no definition), it has **no impact** for the **runtime memory** or **runtime execution** and that's the amazing part of **meta-programming**. The dispatch of an expression such as **"myRepository.get< int, Key1>()"** is done during your build-time.
+
+You may also notice that every slot is actually a [std::shared_ptr](http://en.cppreference.com/w/cpp/memory/shared_ptr). It enforces a clean ressource management: in a multithreaded application, one must be really careful of the lifetime of heap objects. **std::shared_ptr** in this case permits me to ensure that even someone replace a value in a slot, other components on other threads manipulating the old value won't end up with a **dangling pointer/reference** bomb in their hands. Another solution would to use plain value object, but not only it would require copying big objects in every other components but it would also remove polymorphism.
+
+As for the updates signalisation, you first create a watcher object that establishes a contract between a desired slot to watch and your context. You can thereafter query in thread-safe way weither an update has been made and, if so, poll the latest changes. The watcher object is actually a [std::unique_ptr](http://en.cppreference.com/w/cpp/memory/unique_ptr) for a special class, it cannot be moved nor copied without your permission and will automagically remove the singalisation contract between the slot and your context, once destroyed. We will dive deeper in this topic in the comming sections.
 
 Show how we use it: class ConfigA, class ConfigB, passed in a context along the hierarchy class.
