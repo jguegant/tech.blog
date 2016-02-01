@@ -30,7 +30,7 @@ We could have used a **std::map** with [Boost.Variant](http://www.boost.org/doc/
     // compilation error: static_assert failed "type can only occur once in type list"
     std::cout << std::get<int>(myTuple) << std::endl;
 
-**Tuples** are that kind of **C++11** jewelry that should decide your old-fashioned boss to upgrade your team's compiler (and his ugly tie). Not only I could store a **const char* ** and two **ints** without any compiling error, but I could also access them using compile-time mechanisms. In some way, you can see tuples as a compile-time map using indexes or types as keys to reach its elements. You cannot use an index out of bands, it will be catched at compile-time anyway! Sadly, using a type as a key to retrieve an element is only possible if the type is unique in the **tuple**. In my work project, we do have few config objects sharing the same class. Anyway, tuples weren't feeting our needs regarding thread safety and update events. Let's see what we could create using tasty **tuples** as an inspiration.
+**Tuples** are that kind of **C++11** jewelry that should decide your old-fashioned boss to upgrade your team's compiler (and his ugly tie). Not only I could store a **const char* ** and two **ints** without any compiling error, but I could also access them using compile-time mechanisms. In some way, you can see tuples as a compile-time map using indexes or types as keys to reach its elements. You cannot use an index out of bands, it will be catched at compile-time anyway! Sadly, using a type as a key to retrieve an element is only possible if the type is unique in the **tuple**. At my work, we do have few config objects sharing the same class. Anyway, tuples weren't feeting our needs regarding thread safety and update events. Let's see what we could create using tasty **tuples** as an inspiration.
 
 Note that some **tuples** implementations were already available before **C++11**, notably in [boost](http://www.boost.org/doc/libs/1_60_0/libs/tuple/doc/tuple_users_guide.html). **C++11** variadic templates are just very handy, as you will see, to construct such a class.
 
@@ -91,8 +91,113 @@ First and foremost, its name **repository** might not be well-suited for its res
 I start by describing the slots necessary for my application by creating a new type **MyRepository** using a [type alias](http://en.cppreference.com/w/cpp/language/type_alias). As you can see, I use the type of the slots as a key for accessing elements. But in case of contention, I must use a second key: an "empty type" ; like **Key1** and **Key2** in this example.
 If using types as keys seems odd for you, fear not! Here is the most rational explanation I can share with you: we are trying to benefit from our "know-it-all compiler". Your compiler is mainly manipulating types, one can change its flow using these types during the compilation process. Note that these structs are not even complete (no definition), it has **no impact** for the **runtime memory** or **runtime execution** and that's the amazing part of **meta-programming**. The dispatch of an expression such as **"myRepository.get< int, Key1>()"** is done during your build-time.
 
-You may also notice that every slot is actually a [std::shared_ptr](http://en.cppreference.com/w/cpp/memory/shared_ptr). It enforces a clean ressource management: in a multithreaded application, one must be really careful of the lifetime of heap objects. **std::shared_ptr** in this case permits me to ensure that even someone replace a value in a slot, other components on other threads manipulating the old value won't end up with a **dangling pointer/reference** bomb in their hands. Another solution would to use plain value object, but not only it would require copying big objects in every other components but it would also remove polymorphism.
+You may also notice that every slot is actually a [std::shared_ptr](http://en.cppreference.com/w/cpp/memory/shared_ptr). It enforces a clean ressource management: in a multithreaded application, one must be really careful of the lifetime of heap objects. **std::shared_ptr** in this case permits me to ensure that even if someone replaces a value in a slot, other components on other threads manipulating the old value won't end up with a **dangling pointer/reference** bomb in their hands. Another solution would be to use plain value objects, but not only it would require copying big objects in every other components but it would also remove polymorphism.
 
-As for the updates signalisation, you first create a watcher object that establishes a contract between a desired slot to watch and your context. You can thereafter query in thread-safe way weither an update has been made and, if so, poll the latest changes. The watcher object is actually a [std::unique_ptr](http://en.cppreference.com/w/cpp/memory/unique_ptr) for a special class, it cannot be moved nor copied without your permission and will automagically remove the singalisation contract between the slot and your context, once destroyed. We will dive deeper in this topic in the comming sections.
+As for the updates signalisation, you first create a watcher object that establishes a contract between a desired slot to watch and your context. You can thereafter query in thread-safe way weither an update has been made and, if so, poll the latest changes. The watcher object is actually a [std::unique_ptr](http://en.cppreference.com/w/cpp/memory/unique_ptr) for a special class, it cannot be moved nor copied without your permission and will automagically disable the signalisation contract between the slot and your context, once destroyed. We will dive deeper in this topic in the comming sections.
 
-Show how we use it: class ConfigA, class ConfigB, passed in a context along the hierarchy class.
+Within our application, the repository object is encapsulated into a RuntimeContext object. This RuntimeContext object is created explicitely within our main entry point and passed as a reference to a great part of our components. We therefore keep the possibility to test our code easily by setting this RuntimeContext with different implementations. Here is a simplified version of our usage:
+
+    :::c++
+    // runtimecontext.hpp
+    #include "repository.hpp"
+
+    // Incomplete types used as compile-time keys.
+    struct Key1;
+    struct Key2;
+
+    class ConfigType1; // Defined in another file.
+    class ConfigType2; // Defined in another file.
+
+    // Create a type for our repository.
+    using ConfigRepository = Repository
+        <
+            RepositorySlot<ConfigType1>,
+            RepositorySlot<ConfigType2, Key1>,
+            RepositorySlot<ConfigType2, Key2>
+        >;
+
+    struct RuntimeContext
+    {
+        ILogger* logger;
+        // ...
+        ConfigRepository configRepository;
+    };
+
+    // Main.cpp
+
+    #include "runtimecontext.hpp"
+
+    int main()
+    {
+        RuntimeContext runtimeContext;
+        // Setup:
+        runtimeContext.logger = new StdOutLogger();
+        // ...
+
+        // Let's take a reference to the context and change the configuration repository when necessary. 
+        startConfigurationMonitorThread(runtimeContext);
+
+        // Let's take a reference and pass it down to all our components in various threads.
+        startOurApplicationLogic(runtimeContext); 
+
+        return EXIT_SUCCESS;
+    }
+
+
+### Time for a C++11 implementation:
+We can decompose the solution in 3 steps: at first we need to implement a map that accepts **multiple types**, we then need to work on the **thread safety** and finish by the **watcher mechanism**. Let's first fulfill the mission of this post: introducing you to **variadic templates** to solve the multiple-type problem.
+
+#### Variadic templates:
+You may not have heard of **variadic templates** in **C++11** but I bet that you already used **variadic functions** like **printf** in **C** (maybe in a previous unsafe life). As [wikipedia](https://en.wikipedia.org/wiki/Variadic_function) kindly explains "a variadic function is a function of indefinite which accepts a variable number of arguments". In other words, a **variadic function** has potentially an infinite number of **parameters**. Likewise, a **variadic template** has potentially an infinite number of **parameters**. Let's see how to use them!
+
+##### Usage:
+Let's say that you wish to create a template that accept an infinite number of class as arguments. You will use the following notation:
+
+    :::c++
+
+    template <class... T>
+
+You specify a group of template parameters using the ellipsis notation named **T**. Note that this ellipsis notation is consistent with the C's variadic function notation. This group of parameters, called a **parameter-pack**, can then be used in your function template or your class template by **expanding** them. One must use the **ellipsis** notation again (this time after T) to **expand** the parameter pack **T**:
+
+    :::c++
+    template <class... T> void f(T...)
+    //              ^ pack T       ^expansion
+    {
+        // Your function content.
+    }
+
+Now that we have expanded **T**, what can we do Sir? Well, first you give to your expanded parameter **types**, a fancy **name** like **t**.
+    
+    :::c++
+    template <class... T> void f(T... t)
+    //                                ^ your fancy t.
+    {
+        // Your function content.
+    }
+
+If **T = T1, T2**, then **T... t = T1 t1, T2 t2** and **t = t1, t2**. Brilliant, but is that all? Sure no! You can then **expand** again **t** using an "suffix-ellipsis" again:
+
+    :::c++
+    template <class... T> void f(T... t)
+    {
+        anotherFunction(t...);
+        //                ^ t is expanded here! 
+    }
+
+Say that it is a list with commas and can be used with static_cast<>, references, etc.
+Show parameters and deduction:
+
+Show how the substitution would look like.
+
+Show that you can use int.
+Show sizeof...
+
+Show how to use a normal T followed by U....
+Create a printf, better than variadic **C**, type safe!
+
+##### "Variadic" inheritance:
+
+##### A first draft of our container:
+
+
+### A touch of C++14:
