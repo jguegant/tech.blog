@@ -150,14 +150,14 @@ We can decompose the solution in 3 steps: at first we need to implement a map th
 #### Variadic templates:
 You may not have heard of **variadic templates** in **C++11** but I bet that you already used **variadic functions** like **printf** in **C** (maybe in a previous unsafe life). As [wikipedia](https://en.wikipedia.org/wiki/Variadic_function) kindly explains "a variadic function is a function of indefinite which accepts a variable number of arguments". In other words, a **variadic function** has potentially an infinite number of **parameters**. Likewise, a **variadic template** has potentially an infinite number of **parameters**. Let's see how to use them!
 
-##### Usage:
+##### Usage for variadic function templates:
 Let's say that you wish to create a template that accept an infinite number of class as arguments. You will use the following notation:
 
     :::c++
 
     template <class... T>
 
-You specify a group of template parameters using the ellipsis notation named **T**. Note that this ellipsis notation is consistent with the C's variadic function notation. This group of parameters, called a **parameter-pack**, can then be used in your function template or your class template by **expanding** them. One must use the **ellipsis** notation again (this time after T) to **expand** the parameter pack **T**:
+You specify a group of template parameters using the ellipsis notation named **T**. Note that this **ellipsis** notation is consistent with the C's variadic function notation. This group of parameters, called a **parameter-pack**, can then be used in your function template or your class template by **expanding** them. One must use the **ellipsis** notation again (this time after T) to **expand** the parameter pack **T**:
 
     :::c++
     template <class... T> void f(T...)
@@ -184,20 +184,111 @@ If **T = T1, T2**, then **T... t = T1 t1, T2 t2** and **t = t1, t2**. Brilliant,
         //                ^ t is expanded here! 
     }
 
-Say that it is a list with commas and can be used with static_cast<>, references, etc.
-Show parameters and deduction:
+Finally, you can call this function **f** as you would with a normal function template:
+    
+    :::c++
+    template <class... T> void f(T... t)
+    {
+        anotherFunction(t...);
+    }
 
-Show how the substitution would look like.
+    f(1, "foo", "bar"); // Note: the argument deduction avoids us to use f<int, const char*, const char*>
+    // f(1, "foo", "bar") calls a generated f(int t1, const char* t2, const char* t3)
+    // with T1 = int, T2 = const char* and T3 = const char*,
+    // that itself calls anotherFunction(t1, t2, t3) equivalent to call anotherFunction(1, "foo", "bar");
 
-Show that you can use int.
-Show sizeof...
+Actually, the **expansion mechanism** is creating **comma-separated** replication of the **pattern** you apply the **ellipsis** onto. If you think I am tripping out with template-related wording, here is a much more concret example:
 
-Show how to use a normal T followed by U....
-Create a printf, better than variadic **C**, type safe!
+    :::c++
+    template <class... T> void g(T... t)
+    {
+        anotherFunction(t...);
+    }
+
+    template <class... T> void f(T*... t)
+    {
+        g(static_cast<double>(*t)...);
+    }
+
+    int main()
+    {
+        int a = 2;
+        int b = 3;
+
+        f(&a, &b); // Call f(int* t1, int* t2).
+        // Do a subcall to g(static_cast<double>(*t1), static_cast<double>(*t2)).
+
+        return EXIT_SUCCESS;
+    }
+
+I could use the pattern **'*'** for **f** parameters and therefore take them as a pointer! In the same manner, I applied the pattern **'static_cast< double>(*)** to get the value of each arguments and cast them as doubles before forwarding them to **g**.
+
+One last example before moving to **variadic class templates**. One can combine "normal" template parameters with parameter packs and initiate a compile recursion on function templates. Let's take a look at this printing function:
+
+    :::c++
+
+    #include <iostream>
+
+    template <class HEAD> void print(HEAD head)
+    {
+        std::cout << "Stop: " << head << std::endl;
+    }
+
+    template <class HEAD, class... TAIL> void print(HEAD head, TAIL... tail)
+    {
+        std::cout << "Recurse: " << head << std::endl;
+        print(tail...);
+    }
+
+    int main()
+    {
+        print(42, 1337, "foo");
+
+        // Print:
+        // Recurse: 42
+        // Recurse: 1337
+        // Stop: foo
+
+        // Call print<int, int, const char*> (second version of print).
+        // The first int (head) is printed and we call print<int, const char*> (second version of print).
+        // The second int (head again) is printed and we call print<const char*> (first version of print).
+        // We reach recursion stopping condition, only one element left.
+
+        return EXIT_SUCCESS;
+    }
+
+**Variadic templates** are very interesting and I wouldn't be able to cover all their features within this post. It roughly feels like functional programming using your compiler, and even some **Haskellers** might listen to you if you bring that topic during a dinner. For those interested, I would challenge them to write a type-safe version **printf** using variadic templates and take a look at this [reference](http://en.cppreference.com/w/cpp/language/parameter_pack). After that, you will run and scream of fear at the precense of **C**'s **vargs**.
 
 ##### "Variadic" inheritance:
+Sometimes during my programming sessions, I have a very awkward sensation that my crazy code will never compile and, yet, I finally see "build finished" in my terminal. I am talking about that kind of Frankenstein constructions:
 
-##### A first draft of our container:
+    :::c++
 
+    struct A { };
+
+    struct B { };
+
+    template <class... T>
+    struct C: public T... // Variadic inheritance
+    {
+
+    };
+
+    C<A, B> c;
+
+Yes, we can now create a class inheriting of an infinite number of bases. We can access...
+
+emplace
+
+#### Let's play safe:
+Threads safety, etc...
+
+
+#### Our own watchers:
 
 ### A touch of C++14:
+
+Final code.
+
+### Conclusion:
+todo
