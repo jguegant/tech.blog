@@ -276,9 +276,127 @@ Sometimes during my programming sessions, I have a very awkward sensation that m
 
     C<A, B> c;
 
-Yes, we can now create a class inheriting of an infinite number of bases. We can access...
+Yes, we can now create a class inheriting of an infinite number of bases. If you remember my explanation about pattern replications separated by commas, you can imaginge that **struct C: public T...** will be "transformed" in **struct C: public A, public B**, **public T** being the pattern. We start to be able to combine multiple types, each exposing a small amount of methods, to create a flexible concret type. That's one step closer to our multi-type map, and if you are interested in this concept, take a look at [mixins](https://en.wikipedia.org/wiki/Mixin).
 
-emplace
+Instead of inheriting directly from multiple types, couldn't we inherit from some types that encapsulate our types? Absolutely! A traditional map has some **slots** accessible using keys and these slots contain a value. If you give me base-class you are looking for, I can give you access to the value it contains:
+
+    :::c++
+    #include <iostream>
+
+    struct SlotA
+    {
+        int value;
+    };
+
+    struct SlotB
+    {
+        std::string value;
+    };
+
+    // Note: private inheritance, no one can access directly to the slots other than C itself.
+    struct Repository: private SlotA, private SlotB
+    {
+
+        void setSlotA(const int& value)
+        {
+            // I access the base-class's value
+            // Since we have multiple base with a value field, we need to "force" the access to SlotA.
+            SlotA::value = value;
+        }
+
+        int getSlotA()
+        {
+            return SlotA::value;
+        }
+
+        void setSlotB(const std::string& b)
+        {
+            SlotB::value = b;
+        }
+
+        std::string getSlotB()
+        {
+            return SlotB::value;
+        }
+    };
+
+
+    int main()
+    {
+        Repository r;
+
+        r.setSlotA(42);
+        std::cout << r.getSlotA() << std::endl; // Print: 42.
+
+        r.setSlotB(std::string("toto"));
+        std::cout << r.getSlotB() << std::endl; // Print: "toto".
+
+        return EXIT_SUCCESS;
+    }
+
+This code is not generic at all! We know how to create a generic **Slot** using a simple template, and we acquired the magic "create varidiac inheritance" skill, let's fix that ugly copy-paste code:
+
+    :::c++
+
+    #include <iostream>
+    #include <string>
+
+    template <class T>
+    class _Slot
+    {
+    protected:
+        T& doGet() // A nice encapsulation, that will be usefull later on.
+        {
+            return value_;
+        }
+
+        void doSet(const T& value) // Same encapsulation.
+        {
+            value_ = value;
+        }
+    private:
+        T value_;
+    };
+
+    template <class... Slots>
+    class Repository : private _Slot<Slots>... // Here the pattern is _Slot<   >...
+    {
+    public:
+        template <class Type> // Give me a type and,
+        Type& get()
+        {
+            return _Slot<Type>::doGet(); // I can select the base class.
+        }
+
+        template <class Type>
+        void set(const Type& value)
+        {
+            _Slot<Type>::doSet(value);
+        }
+    };
+
+    using MyRepository = Repository // Let's pick the type of our slots.
+    <
+            int,
+            std::string
+    >;
+
+    int main()
+    {
+        MyRepository myRepository;
+
+        myRepository.set<std::string>("toto");
+        myRepository.set(42); // Notice the type deduction: we pass an int, so it writes in the int slot.
+
+        std::cout << myRepository.get<int>() << std::endl; // Print: "toto".
+        std::cout << myRepository.get<std::string>() << std::endl; // Print: 42.
+
+
+        return EXIT_SUCCESS;
+    }
+
+
+Another sub-key, emplace
 
 #### Let's play safe:
 Threads safety, etc...
