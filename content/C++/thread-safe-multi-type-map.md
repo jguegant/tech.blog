@@ -12,7 +12,7 @@ Note: for the sake of your sanity and the fact that *errare humanum est*, this a
 ### Why would I use a thread-safe multi-type map?
 Let me explain our odyssey: we are working on a highly modular and multi-threaded application. One of its core feature is the ability to reload various configuration files or assets used by some components spread accross many threads and a giant hierarchy of objects. The reloading process is automic using Linux's [inotify](http://man7.org/linux/man-pages/man7/inotify.7.html) monitoring filesystem events. One thread is dedicated to the reception of filesystem events and must react accordingly by parsing any changes and pushing them to other threads. At first, we used, to pass-by any newly parsed asset, some thread-safe **queues** or something analog to [go channels](https://tour.golang.org/concurrency/2). Since we did not want to use **singletons**, we had to pass references to our queues all along our object hierarchy. Sadly, our **queue** implementation is **one to one** and supports only **one type**, none of our config/asset types share the same **base-type**. For each asset type and each component using this asset, we had to create a new **queue** and pass-it all along our hierarchy. That is certainely not convenient! What we really wanted was a hybrid class between a [std::map](http://en.cppreference.com/w/cpp/container/map) and a [std::tuple](http://en.cppreference.com/w/cpp/utility/tuple).
 
-We could have used a **std::map** with [Boost.Variant](http://www.boost.org/doc/libs/1_60_0/doc/html/variant.html) to store our items, using a type like the following **"std::map< std::string, std::shared_ptr< Boost.Variant < ConfigType1, ConfigType2>>>"**. **Boost.Variant** permits to encapsulate a **heterogeneous set of types** without **common base-type or base-class**, which solves one of our point. Another solution would be to encapsulate manually all our configuration classes in the same familly of classes, that is pretty cumbersome. But anyway, **std::map** does not guaranty any safety if you are writing and reading at the same time on a map slot. Secondly, **std::shared_ptr** does guaranty a thread-safe destruction of the pointee object (i.e: the reference counter is thread-safe) but nothing for the **std::shared_ptr** object itself. It means that copying a **std::shared_ptr** that could potentially be modified from another thread, might lead to an undefined behaviour. Even if we were to encapsulate all these unsafe access with mutexes, we are still lacking a nice mechanism to get update notifications for our objects. We do not want to constantly poll the latest version and propagate it through our code. And finally, if that solution were elegant enough, why would I currently write this blog post?
+We could have used a **std::map** with [Boost.Variant](http://www.boost.org/doc/libs/1_60_0/doc/html/variant.html) to store our items, using a type like the following **"std::map< std::string, std::shared_ptr< Boost.Variant < ConfigType1, ConfigType2>>>"**. **Boost.Variant** permits to encapsulate a **heterogeneous set of types** without **common base-type or base-class**, which solves one of our point. Another solution would be to encapsulate manually all our configuration classes in the same familly of classes, that is pretty cumbersome. But anyway, **std::map** does not guaranty any safety if you are writing and reading at the same time on a map slot. Secondly, **std::shared_ptr** does guaranty a thread-safe destruction of the pointee object (i.e: the reference counter is thread-safe) but nothing for the **std::shared_ptr** object itself. It means that copying a **std::shared_ptr** that could potentially be modified from another thread, might lead to an undefined behaviour. Even if we were to encapsulate all these unsafe accesses with mutexes, we are still lacking a nice mechanism to get update notifications for our objects. We do not want to constantly poll the latest version and propagate it through our code. And finally, if that solution were elegant enough, why would I currently write this blog post?
 
 **C++11** brings another collection type called **std::tuple**. It permits to store a set of elements of **heterogeneous types**. Take a look at this short example:
 	
@@ -157,7 +157,7 @@ Let's say that you wish to create a template that accept an infinite number of c
 
     template <class... T>
 
-You specify a group of template parameters using the ellipsis notation named **T**. Note that this **ellipsis** notation is consistent with the C's variadic function notation. This group of parameters, called a **parameter-pack**, can then be used in your function template or your class template by **expanding** them. One must use the **ellipsis** notation again (this time after T) to **expand** the parameter pack **T**:
+You specify a group of template parameters using the ellipsis notation named **T**. Note that this **ellipsis** notation is consistent with **C**'s variadic function notation. This group of parameters, called a **parameter-pack**, can then be used in your function template or your class template by **expanding** them. One must use the **ellipsis** notation again (this time after T) to **expand** the parameter pack **T**:
 
     :::c++
     template <class... T> void f(T...)
@@ -257,7 +257,7 @@ One last example before moving to **variadic class templates**. One can combine 
         return EXIT_SUCCESS;
     }
 
-**Variadic templates** are very interesting and I wouldn't be able to cover all their features within this post. It roughly feels like functional programming using your compiler, and even some **Haskellers** might listen to you if you bring that topic during a dinner. For those interested, I would challenge them to write a type-safe version **printf** using variadic templates and take a look at this [reference](http://en.cppreference.com/w/cpp/language/parameter_pack). After that, you will run and scream of fear at the precense of **C**'s **vargs**.
+**Variadic templates** are very interesting and I wouldn't be able to cover all their features within this post. It roughly feels like functional programming using your compiler, and even some **Haskellers** might listen to you if you bring that topic during a dinner. For those interested, I would challenge them to write a type-safe version of **printf** using variadic templates with the help of this [reference](http://en.cppreference.com/w/cpp/language/parameter_pack). After that, you will run and scream of fear at the precense of **C**'s **vargs**.
 
 ##### "Variadic" inheritance:
 Sometimes during my programming sessions, I have a very awkward sensation that my crazy code will never compile and, yet, I finally see "build finished" in my terminal. I am talking about that kind of Frankenstein constructions:
@@ -405,7 +405,7 @@ This repository starts to take shape, but we are not yet done! If you try to hav
 
     struct DefaultSlotKey; // No needs for a definition
 
-    template <class T, class Key = DefaultSlotKey>
+    template <class T, class Key = DefaultSlotKey> // The Key type will never be trully used. 
     class Slot
     {
         // ...
@@ -427,6 +427,20 @@ This repository starts to take shape, but we are not yet done! If you try to hav
             Slot<Type, Key>::doSet(value);
         }
     };
+
+    struct Key1; // No need for definition.
+    struct Key2;
+
+    // Now you can do:
+    using MyRepository = Repository
+        <
+                Slot<int>,       // Let's pick the type of our slots.
+                Slot<std::string, Key1>,
+                Slot<std::string, Key2>
+        >;
+
+
+![A nice UML diagram of my classes]({filename}/images/repository_uml.png)
 
 Our repository class is missing an **emplace** method, right? **emplace** is taking a variable number of arguments with different types and **forward** them to create an object within one of our slots. A variable number of arguments and types must remind you something... **variadic templates**! Let's create this variadic **emplace** method as well as its equivalent in the Slot class:
 
