@@ -52,9 +52,9 @@ To keep your attention for the rest of this post, here is my **thread-safe multi
     // Create a type for our repository.
     using MyRepository = Repository
         <
-            RepositorySlot<std::string>, // One slot for std::string.
-            RepositorySlot<int, Key1>, // Two slots for int.
-            RepositorySlot<int, Key2> // Must be differentiate using "type keys" (Key1, Key2).
+            Slot<std::string>, // One slot for std::string.
+            Slot<int, Key1>, // Two slots for int.
+            Slot<int, Key2> // Must be differentiate using "type keys" (Key1, Key2).
         >;
 
     int main()
@@ -111,9 +111,9 @@ Within our application, the repository object is encapsulated into a RuntimeCont
     // Create a type for our repository.
     using ConfigRepository = Repository
         <
-            RepositorySlot<ConfigType1>,
-            RepositorySlot<ConfigType2, Key1>,
-            RepositorySlot<ConfigType2, Key2>
+            Slot<ConfigType1>,
+            Slot<ConfigType2, Key1>,
+            Slot<ConfigType2, Key2>
         >;
 
     struct RuntimeContext
@@ -334,52 +334,57 @@ Instead of inheriting directly from multiple types, couldn't we inherit from som
         return EXIT_SUCCESS;
     }
 
-This code is not generic at all! We know how to create a generic **Slot** using a simple template, and we acquired the magic "create varidiac inheritance" skill, let's fix that ugly copy-paste code:
+This code is not generic at all! We know how to create a generic **Slot** using a simple template, and we acquired the magic "create varidiac inheritance" skill. If my **Repository** class inherit from **Slot< TypeA>** and you call a method template with **TypeA** as a template argument, I can call the **doGet** method of the **Slot< TypeA>** base-class and give you back the **value** of **TypeA** in that repository. Let's fix the previous ugly copy-paste code:
 
     :::c++
 
     #include <iostream>
     #include <string>
 
-    template <class T>
-    class _Slot
+    template <class Type>
+    class Slot
     {
     protected:
-        T& doGet() // A nice encapsulation, that will be usefull later on.
+        Type& doGet() // A nice encapsulation, that will be usefull later on.
         {
             return value_;
         }
 
-        void doSet(const T& value) // Same encapsulation.
+        void doSet(const Type& value) // Same encapsulation.
         {
             value_ = value;
         }
     private:
-        T value_;
+        Type value_;
     };
 
     template <class... Slots>
-    class Repository : private _Slot<Slots>... // Here the pattern is _Slot<   >...
+    class Repository : private Slots... // inherit from our slots...
     {
     public:
         template <class Type> // Give me a type and,
         Type& get()
         {
-            return _Slot<Type>::doGet(); // I can select the base class.
+            return Slot<Type>::doGet(); // I can select the Base class.
         }
 
         template <class Type>
         void set(const Type& value)
         {
-            _Slot<Type>::doSet(value);
+            Slot<Type>::doSet(value);
         }
     };
 
-    using MyRepository = Repository // Let's pick the type of our slots.
-    <
-            int,
-            std::string
-    >;
+    // Incomplete types used as compile-time keys.
+    struct Key1;
+    struct Key2;
+
+    // Create a type for our repository.
+    using MyRepository = Repository
+            <
+                    Slot<int>,       // Let's pick the type of our slots.
+                    Slot<std::string>
+            >;
 
     int main()
     {
@@ -391,12 +396,86 @@ This code is not generic at all! We know how to create a generic **Slot** using 
         std::cout << myRepository.get<int>() << std::endl; // Print: "toto".
         std::cout << myRepository.get<std::string>() << std::endl; // Print: 42.
 
-
         return EXIT_SUCCESS;
     }
 
+This repository starts to take shape, but we are not yet done! If you try to have two int slots, you will raise a compilation error: "base class 'Slot<int>' specified more than once as a direct base class". We need to add another key-type to our slot class with a default value and we need to modify our repository methods to handle it:
 
-Another sub-key, emplace
+    :::c++
+
+    struct DefaultSlotKey; // No needs for a definition
+
+    template <class T, class Key = DefaultSlotKey>
+    class Slot
+    {
+        // ...
+    };
+
+    template <class... Slots>
+    class Repository : private Slots...
+    {
+    public:
+        template <class Type, class Key = DefaultSlotKey> // The default key must be here too.
+        Type& get()
+        {
+            return Slot<Type, Key>::doGet();
+        }
+
+        template <class Type, class Key = DefaultSlotKey>
+        void set(const Type& value)
+        {
+            Slot<Type, Key>::doSet(value);
+        }
+    };
+
+Our repository class is missing an **emplace** method, right? **emplace** is taking a variable number of arguments with different types and **forward** them to create an object within one of our slots. A variable number of arguments and types must remind you something... **variadic templates**! Let's create this variadic **emplace** method as well as its equivalent in the Slot class:
+
+    :::c++
+
+    // In class Slot:
+
+    template <class... Args>
+    void doEmplace(const Args&... args) // Here the pattern is const  &.
+    {
+        value_ = Type(args...); // copy-operator (might use move semantics).
+    }
+
+    // In class Repository:
+    template <class Type, class Key = DefaultSlotKey, class... Args>
+    void emplace(const Args&... args) // Here the pattern is const  &.
+    {
+        Slot<Type, Key>::doEmplace(args...);
+    }
+
+    // Usage:
+    myRepository.emplace<std::string>(4, 'a'); // Create a std::string "aaaa".
+
+One last improvement for the future users of your repositories! If one morning, badly awake, a coworker of yours is trying to get a type or key that doesn't exist (like myRepository.get< double>();), he might be welcomed by such a message:
+
+    :::c++
+
+    /home/jguegant/Coding/ConfigsRepo/main.cpp:36:33: error: call to non-static member function without an object argument
+        return Slot<Type, Key>::doGet();
+               ~~~~~~~~~~~~~~~~~^~~~~
+    /home/jguegant/Coding/ConfigsRepo/main.cpp:67:18: note: in instantiation of function template specialization 'Repository<Slot<int, DefaultSlotKey>, Slot<std::__1::basic_string<char>, DefaultSlotKey> >::get<double, DefaultSlotKey>' requested here
+        myRepository.get<double>();
+                     ^
+    /home/jguegant/Coding/ConfigsRepo/main.cpp:36:33: error: 'doGet' is a protected member of 'Slot<double, DefaultSlotKey>'
+            return Slot<Type, Key>::doGet();
+                                    ^
+    /home/jguegant/Coding/ConfigsRepo/main.cpp:10:11: note: declared protected here
+        Type& doGet()
+              ^
+    2 errors generated.
+
+This message is very confusing, our class does not inherit from **Slot< double, DefaultSlotKey>**! And we are talking about a **clang** output, I wonder what **gcc** or **MSVC** could produce... If you do not want to be assinated from your moody colleague with a spoon, here is a nice solution using **C++11**'s [static_asserts](http://en.cppreference.com/w/cpp/language/static_assert). **Static asserts** give you the possibility to generate your own compiler error messages in the same fashion as normal asserts but at compile-time. Using a the trait like **std::is_base_of**, you can suggest the user of your repository to check twice his type. Let's put this **static_assert** at the beggining of all the methods of **Repository**:
+    
+    :::c++
+
+    static_assert(std::is_base_of<Slot<Type, Key>, Repository<Slots...>>::value, 
+              "Please ensure that this type or this key exists in this repository");
+
+We are done for this part (finally...), time to think about multi-threading! If you want to know more about the magic behind **std::is_base_of**, I would suggest you to read my previous post on [SFINAE]({filename}./sfinae-introduction.md), it might give you few hints. Here is a [gist](https://gist.github.com/Jiwan/c1daf7a80ebeb166dc61) of what we achieved so far. Did you notice the change on **emplace**? If you do not understand it, have a look at [this explanation on perfect forwarding](http://thbecker.net/articles/rvalue_references/section_07.html). Sadly, it would be a way too long topic for this post (trust me on that point!) and has a minor impact on our repository right now.
 
 #### Let's play safe:
 Threads safety, etc...
@@ -409,4 +488,4 @@ Threads safety, etc...
 Final code.
 
 ### Conclusion:
-todo
+more than shared_pointer...
