@@ -560,16 +560,140 @@ Starting from **gcc 4.9**, one can use [atomic access functions](http://en.cppre
         std::shared_ptr<Type> value_;
     ...
 
-**Atomics** are elegants and can often bring a great increase of performances if it uses lock-free instructions internally. Sadly, in the case of **shared_ptrs**, **atomic_is_lock_free** will return you **false**. By digging in **libstdc++** and **libc++**, you will observe some mutexes. **gcc** seems to use a fixed size "pool" of mutexes attributed to a shared_ptr according to a hash of its pointee address when dealing with atomic operations. In other words, no rocket-science for atomic shared pointers until now.
+**Atomics** are elegants and can often bring a great increase of performances if using lock-free instructions internally. Sadly, in the case of **shared_ptrs**, **atomic_is_lock_free** will return you **false**. By digging in **libstdc++** and **libc++**, you will find some mutexes. **gcc** seems to use a fixed size "pool" of mutexes attributed to a shared_ptr according to a hash of its pointee address, when dealing with atomic operations. In other words, no rocket-science for atomic shared pointers until now.
 
 #### Our own watchers:
  "...I shall live and die at my post. I am the sword in the darkness. I am the watcher on the walls. I am the shield that guards the realms of men..." **-- The Night's Watch oath**
 
+We want to be able to seal a bond between one of the slot and a context. By context, I mean the lifetime of an object in a thread, a function or a method. If an update has been made on that slot, we must be signaled in that context and to retrieve the new update. The bond must be destroyed if the context does not exist anymore. It should reminds you the Night's Watch oath ... as well as the [RAII idiom](https://en.wikipedia.org/wiki/Resource_Acquisition_Is_Initialization): "holding a resource is tied to object lifetime: resource acquisition is done during object creation, by the constructor, while resource deallocation is done during object destruction, by the destructor. If objects are destroyed properly, resource leaks do not occur.". A strong ownership policy can be obtained with the help of a [std::unique_ptr](http://en.cppreference.com/w/cpp/memory/unique_ptr) and the signalisation can be done using a **boolean flag**.
 
+We will, therefore, encapsulate a [std::atomic_bool](http://en.cppreference.com/w/cpp/atomic/atomic) into a class **Watcher** automagically registered to a slot once created, and unregistered once destructed. This **Watcher** class also takes as a reference the slot in order to query its value as you can see:
 
-### A touch of C++14:
+    :::c++
 
-Final code.
+    template <class Type, class Key>
+    class Watcher
+    {
+    public:
+        Watcher(Slot<Type, Key>& slot):
+                slot_(slot),
+                hasBeenChanged_(false)
+        {
+        }
+
+        Watcher(const Watcher&) = delete;               // Impossible to copy that class.
+
+        Watcher & operator=(const Watcher&) = delete;   // Impossible to copy that class.
+
+        bool hasBeenChanged() const
+        {
+            return hasBeenChanged_;
+        }
+
+        void triggerChanges()
+        {
+            hasBeenChanged_ = true;
+        }
+
+        auto get() -> decltype(std::declval<Slot<Type, Key>>().doGet())
+        {
+            hasBeenChanged_ = false; // Note: even if there is an update of the value between this line and the getValue one,
+            // we will still have the latest version.
+            // Note 2: atomic_bool automatically use a barrier and the two operations can't be inversed.
+            return slot_.doGet();
+        }
+
+    private:
+        Slot<Type, Key>& slot_;
+        std::atomic_bool hasBeenChanged_;
+    };
+
+As for the automatic registration, we will add two private methods **registerWatcher** and **unregisterWatcher** to our **Slot** class that add or remove a watcher from an internal list. The list is always protected, when accessed, with a **std::mutex** and tracks all the current watchers that must be signaled when **set** is called on that slot. 
+
+    :::c++
+    template <class Type, class Key>
+    class Slot
+    {
+    public:
+        using ThisType = Slot<Type, Key>;
+        using WatcherType = Watcher<Type, Key>;
+
+    ...
+    private:
+        void registerWatcher(WatcherType* newWatcher)
+        {
+            std::lock_guard<std::mutex> l(watchers_mutex_);
+            watchers_.push_back(newWatcher);
+        }
+
+        void unregisterWatcher(WatcherType *toBeDelete)
+        {
+            std::lock_guard<std::mutex> l(watchers_mutex_);
+            watchers_.erase(std::remove(watchers_.begin(), watchers_.end(), toBeDelete), watchers_.end());
+
+            delete toBeDelete; // Now that we removed the watcher from the list, we can proceed to delete it.
+        }
+
+        void signal()
+        {
+            std::lock_guard<std::mutex> l(watchers_mutex_);
+            for (auto watcher : watchers_) {
+                watcher->triggerChanges(); // Let's raise the hasBeenChanged_ atomic boolean flag. 
+            }
+        }
+
+    private:
+        std::vector<WatcherType*> watchers_; // All the registered watchers are in that list.
+
+    ...
+    };
+
+You may have notice that we are passing a bare **WatcherType** pointers. The ownership is actually given to whoever is using that watcher encapsulated within a **std::unique_ptr**. **C++11**'s unique pointers are designed such as you can pass a **custom deleter**, or a **delete callback** so to speak. Hence, we can create a method that get a **Watcher** for a **Slot**, and register as the deleter of that **Watcher** a **lambda function** designed to call **unregisterWatcher**. Note that the slot MUST always lives longer than the unique pointer and its associated watcher (it should not be a problem in most cases). Let's finish that **Slot** class forever and ever:
+
+    :::c++
+
+    template <class Type, class Key>
+    class Slot
+    {
+    public:
+        using ThisType = Slot<Type, Key>;
+        using WatcherType = Watcher<Type, Key>;
+
+        // We use unique_ptr for a strong ownership policy.
+        // We use std::function to declare the type of our deleter.
+        using WatcherTypePtr = std::unique_ptr<WatcherType, std::function<void(WatcherType*)>> ; 
+
+    ...
+
+    public:
+        WatcherTypePtr doGetWatcher()
+        {
+            // Create a unique_ptr and pass a lambda as a deleter.
+            // The lambda capture "this" and will call unregisterWatcher.
+            WatcherTypePtr watcher(new WatcherType(*this), [this](WatcherType* toBeDelete) {
+                this->unregisterWatcher(toBeDelete);});
+
+            registerWatcher(watcher.get());
+
+            return watcher;
+        }
+    ...
+    };
+
+Are we done? Hell no, but we will be really soon. All we need is to expose the possibility to acquire a watcher from the repository itself. In the same manner as **set** and **get**, we simply dispatch using the type and the key on one of our slot:
+
+    :::c++
+
+    template <class Type, class Key = DefaultSlotKey>
+    typename Slot<Type, Key>::WatcherTypePtr getWatcher() // typename is used for disambiguate
+    {
+        return Slot<Type, Key>::doGetWatcher();
+    }
+ 
+**WAIT**, don't close that page too fast. If you want to be able to snub everyone, you can replace this ugly **typename Slot<Type, Key>::WatcherTypePtr** with **auto** and claim that your repository class is **C++14** only! Grab the full code of what we build together on [gist](https://gist.github.com/Jiwan/31f8f837e4f4b90fed13) and enjoy!
+
 
 ### Conclusion:
-more than shared_pointer...
+Once again, I hope you enjoyed this post about one of my favourite subject: C++. I might not be the best teacher nor the best author but I wish that you learnt something today! Please, if you any suggestions or questions, feel free to post anything in the commentaries. My broken English being what it is, I kindly accept any help for my written mistakes.
+
+Many thanks to my colleagues that greatly helped me by reviewing my code and for the time together.
