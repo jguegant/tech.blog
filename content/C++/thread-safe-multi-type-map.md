@@ -440,6 +440,7 @@ This repository starts to take shape, but we are not yet done! If you try to hav
         >;
 
 
+Here is a UML representation of this Repository using distinct **Keys** for the type **std::string**:
 ![A nice UML diagram of my classes]({filename}/images/repository_uml.png)
 
 Our repository class is missing an **emplace** method, right? **emplace** is taking a variable number of arguments with different types and **forward** them to create an object within one of our slots. A variable number of arguments and types must remind you something... **variadic templates**! Let's create this variadic **emplace** method as well as its equivalent in the Slot class:
@@ -492,10 +493,79 @@ This message is very confusing, our class does not inherit from **Slot< double, 
 We are done for this part (finally...), time to think about multi-threading! If you want to know more about the magic behind **std::is_base_of**, I would suggest you to read my previous post on [SFINAE]({filename}./sfinae-introduction.md), it might give you few hints. Here is a [gist](https://gist.github.com/Jiwan/c1daf7a80ebeb166dc61) of what we achieved so far. Did you notice the change on **emplace**? If you do not understand it, have a look at [this explanation on perfect forwarding](http://thbecker.net/articles/rvalue_references/section_07.html). Sadly, it would be a way too long topic for this post (trust me on that point!) and has a minor impact on our repository right now.
 
 #### Let's play safe:
-Threads safety, etc...
+The repository we just succeeded to craft can now be used in a single-thread environment without further investigation. But the initial decision was to make this class manipulable from multiple-threads without any worries considering the safety of our operations. As explained in the beginning of this post, we will not use direct values as we currently do, but instead allocate our objects on the heap and use some **shared pointers** to strictly control their **lifetime**. No matter which version (recent or deprecated) of the object a thread is manipulating, it's lifetime will be extended until the last thread using it definitely release it. It also implies that the objects themselves are thread-safe. In the case of read-only objects like configs or assets, it shouldn't be too much a burden. In this [gist](https://gist.github.com/Jiwan/cb66d01c38128a351f42), you will find a repository version using **std::shared_ptrs**.
 
+**std::shared_ptr** is an amazing feature of **C++11** when dealing with multi-threading, but has its weakness. Within my code (in the previous gist link) a race condition condition can occur:
+
+    :::c++
+
+    // What if I try to copy value_ at the return point...
+    std::shared_ptr<Type> doGet() const
+    {
+        return value_;
+    }
+
+    // ... meanwhile another thread is changing value_ to value?
+    void doSet(const std::shared_ptr<Type> &value)
+    {
+        value_ = value;
+    }
+
+As specified: "If multiple threads of execution access the **same** std::shared_ptr object without synchronization and any of those accesses uses a non-const member function of shared_ptr then a data race will occur". Note that we are talking about the **same** shared pointer. Multiple shared pointer **copies** pointing to the same object are fine, as long as these copies originated from the same shared pointer in first place. Copies are sharing the same **control block**, where the **reference counters** (one for shared_ptr and one for weak_ptr) are located, and the specification says "the control block of a shared_ptr is thread-safe: different std::shared_ptr objects can be accessed using mutable operations, such as operator= or reset, simultaneously by multiple threads, even when these instances are copies, and share the same control block internally.".
+
+Depending on the age of your compiler and its standard library, I suggest two solutions:
+
+##### 1) A global mutex:
+A straightforward solution relies on a [std::mutex](http://en.cppreference.com/w/cpp/thread/mutex) that we lock during **doGet** and **doSet** execution:
+    
+    :::c++
+    ...
+        std::shared_ptr<Type> doGet()
+        {
+            // The lock is enabled until value_ has been copied!
+            std::lock_guard<std::mutex> lock(mutex_);
+            return value_;
+        }
+
+        void doSet(const std::shared_ptr<Type> &value)
+        {
+            // The lock is enabled until value has been copied into value!
+            std::lock_guard<std::mutex> lock(mutex_);
+            value_ = value;
+        }
+
+    private:
+        std::mutex mutex_;
+    ...
+
+This solution is ideal if you have a **Linux** distribution that only ships **gcc 4.8.x** like mine. While not particularly elegant, it doesn't have a great impact on performances compared to the next solution. 
+
+##### 2) Atomic access functions:
+Starting from **gcc 4.9**, one can use [atomic access functions](http://en.cppreference.com/w/cpp/memory/shared_ptr/atomic) to manipulate shared pointers. I dream of a day where a specialisation for **std::atomic< std::shared_ptr<T>>** exists, but from now, we will resort to use **std::atomic_load** and **std::atomic_exchange**:
+
+    :::c++
+
+    ...
+        std::shared_ptr<Type> doGet() const
+        {
+            return std::atomic_load(&value_);
+        }
+
+        void doSet(const std::shared_ptr<Type> &value)
+        {
+            std::atomic_exchange(&value_, value);
+        }
+
+    private:
+        std::shared_ptr<Type> value_;
+    ...
+
+**Atomics** are elegants and can often bring a great increase of performances if it uses lock-free instructions internally. Sadly, in the case of **shared_ptrs**, **atomic_is_lock_free** will return you **false**. By digging in **libstdc++** and **libc++**, you will observe some mutexes. **gcc** seems to use a fixed size "pool" of mutexes attributed to a shared_ptr according to a hash of its pointee address when dealing with atomic operations. In other words, no rocket-science for atomic shared pointers until now.
 
 #### Our own watchers:
+ "...I shall live and die at my post. I am the sword in the darkness. I am the watcher on the walls. I am the shield that guards the realms of men..." **-- The Night's Watch oath**
+
+
 
 ### A touch of C++14:
 
