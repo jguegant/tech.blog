@@ -6,7 +6,7 @@ AUTHOR = u'Jean Guegant'
 SITENAME = u"Jean Guegant's Blog"
 SITETITLE = AUTHOR
 SITESUBTITLE = u'Software Engineer - C++, security, game development and random thoughts.'
-SITEURL = 'http://localhost:8000'
+SITEURL = '//localhost:8000'
 SITELOGO = SITEURL + '/images/myself.png'
 
 PATH = 'content'

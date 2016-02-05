@@ -30,7 +30,7 @@ We could have used a **std::map** with [Boost.Variant](http://www.boost.org/doc/
     // compilation error: static_assert failed "type can only occur once in type list"
     std::cout << std::get<int>(myTuple) << std::endl;
 
-**Tuples** are that kind of **C++11** jewelry that should decide your old-fashioned boss to upgrade your team's compiler (and his ugly tie). Not only I could store a **const char* ** and two **ints** without any compiling error, but I could also access them using compile-time mechanisms. In some way, you can see tuples as a compile-time map using indexes or types as keys to reach its elements. You cannot use an index out of bands, it will be catched at compile-time anyway! Sadly, using a type as a key to retrieve an element is only possible if the type is unique in the **tuple**. At my work, we do have few config objects sharing the same class. Anyway, tuples weren't feeting our needs regarding thread safety and update events. Let's see what we could create using tasty **tuples** as an inspiration.
+**Tuples** are that kind of **C++11** jewelry that should decide your old-fashioned boss to upgrade your team's compiler (and his ugly tie). Not only I could store a **const char* ** and two **ints** without any compiling error, but I could also access them using compile-time mechanisms. In some way, you can see tuples as a compile-time map using indexes or types as keys to reach its elements. You cannot use an index out of bands, it will be catched at compile-time anyway! Sadly, using a type as a key to retrieve an element is only possible if the type is unique in the **tuple**. At my work, we do have few config objects sharing the same class. Anyway, tuples weren't fitting our needs regarding thread safety and update events. Let's see what we could create using tasty **tuples** as an inspiration.
 
 Note that some **tuples** implementations were already available before **C++11**, notably in [boost](http://www.boost.org/doc/libs/1_60_0/libs/tuple/doc/tuple_users_guide.html). **C++11** variadic templates are just very handy, as you will see, to construct such a class.
 
@@ -495,7 +495,7 @@ We are done for this part (finally...), time to think about multi-threading! If 
 #### Let's play safe:
 The repository we just succeeded to craft can now be used in a single-thread environment without further investigation. But the initial decision was to make this class manipulable from multiple-threads without any worries considering the safety of our operations. As explained in the beginning of this post, we will not use direct values as we currently do, but instead allocate our objects on the heap and use some **shared pointers** to strictly control their **lifetime**. No matter which version (recent or deprecated) of the object a thread is manipulating, it's lifetime will be extended until the last thread using it definitely release it. It also implies that the objects themselves are thread-safe. In the case of read-only objects like configs or assets, it shouldn't be too much a burden. In this [gist](https://gist.github.com/Jiwan/cb66d01c38128a351f42), you will find a repository version using **std::shared_ptrs**.
 
-**std::shared_ptr** is an amazing feature of **C++11** when dealing with multi-threading, but has its weakness. Within my code (in the previous gist link) a race condition condition can occur:
+**std::shared_ptr** is an amazing feature of **C++11** when dealing with multi-threading, but has its weakness. Within my code (in the previous gist link) a race condition can occur:
 
     :::c++
 
