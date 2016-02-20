@@ -703,13 +703,19 @@ There are few things I didn't tell you, on purpose. This article would otherwise
 		public:
 		    // A public operator() that accept the argument we wish to test onto the UnnamedType.
 		    // Notice that the return type is automatic!
-		    template <typename... Params> constexpr auto operator()(const Params& ...)
+		    template <typename... Params> constexpr auto operator()(Params&& ...)
 		    {
 		        // The argument is forwarded to one of the two overloads.
 		        // The SFINAE on the 'true_type' will come into play to dispatch.
 		        return test_validity<Params...>(int());
 		    }
 		};
+
+		template <typename UnnamedType> constexpr auto is_valid(UnnamedType&& t) 
+		{
+			// We used auto for the return type: it will be deduced here.
+		    return container<UnnamedType>();
+		}
 
 * This code is working even if my types are incomplete, for instance a forward declaration, or a normal declaration but with a missing definition. What can I do? Well, you can insert a check on the size of your type either in the **SFINAE** construction or before calling it: "**static_assert( sizeof( T ), "type is incomplete." );**".
 
