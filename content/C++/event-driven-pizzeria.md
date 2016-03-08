@@ -1,4 +1,4 @@
-Title: My favorite pizzeria is asynchronous and event-driven... my C++ server too
+Title: My favorite pizzeria is asynchronous and event-driven... my back-end server too
 Date: 14:00 01-10-2016 
 Modified: 14:00 01-10-2016
 Tags: C++14, Python, event-driven, asynchronous architecture
@@ -21,7 +21,7 @@ We will soon discover the Secret Recipe that **Ngin O' Pepperonix** used to conq
 
 #### **Apach' Hut's** traditional management:
 
-**Apach' Hut** was the favorite pizza food delivery brand in the Silicon Valley for the past decade. Everyone love the quality of their pizzas, the staff and its clean online menu. Everyone recognise that the on-call delivery of **Apach' Hut** is usually pleasing, but it simply can't cope the amount of clients during rush hours. From an external point of view, it looks like the pizza delivering process is satured very quickly at lunch time. Their website becomes equally unreachable. On contrary, some pretend that **Ngin O' Pepperonix** is flawless on that point: hell, it even handles gaming events.
+**Apach' Hut** was the favorite pizza food delivery brand in the Silicon Valley for the past decade. Everyone love the quality of their pizzas, the staff and its clean online menu. Everyone recognise that the on-call delivery of **Apach' Hut** is usually pleasing, but it simply can't cope the amount of clients during rush hours. From an external point of view, it looks like the pizza delivering process is satured very quickly at lunch time. Their web-service becomes equally unreachable. On contrary, some pretend that **Ngin O' Pepperonix** is flawless on that point.
 
 ##### In the kitchen:
 Let's take a look on how is a phone request served in **Apach' Hut**:
@@ -30,7 +30,7 @@ Let's take a look on how is a phone request served in **Apach' Hut**:
 2. Once available, a call center agent available picks up the call and takes note of the client's request. Most of the calls last in average **5min**. The agent then dispatches the request to a cook, **IF** available.
 3. Cooks, themselves, are waiting **passively** in room for a request. Sometimes, they may have time to read a book for **20min** ; but in rush hours, they barely enter the waiting-room that the call center center yells at them a new request.
 4. Once a cook acquires a pizza request, he will head to the warehouse to get ingredients. If lucky, the warehouse contains enough tomatoes, shrooms, bacon... But it is not unusual that the warehouse is out of stock in one of the precious substance for an amazing pizza. The agent must therefore **wait passively** for the next delivery from the main warehouse between **0 to 30min**.
-5. After the warehouse detour, finally starts the cook's mission. The cook shines for **15min**, during which he magically executes his own recipe (his grand-parent, Mario, would be proud of his Italian skills on margherita pizzas).
+5. After the warehouse detour, finally starts the cook's mission. The cook shines for **15min**, during which he magically executes his own recipe.
 6. Time to put the pizza in the oven and... light a cigarette. Anyway the cook must wait **30min**, **taskless**.
 7. Finally, the cook wraps the pizza in its box and gives it to one of these crazy delivery boys we are used to in Europe. Sadly, the cook cannot process to another pizza before he ensures that the client is satisfied, **20min** lost in average...
 
@@ -43,7 +43,12 @@ Effectively this management is inefficient as Apach' cooks spend a good part of 
 If this workload management seems counterintuitive, it actually reflects the architecture behind a synchronous web-server. Let's see how we could compare Apach' Hut with their online infrastructure.
 
 ##### In the datacenter:
+An online order triggers the following flow in **Apach' Hut** architecture:
+1. A client press the order button after selecting his pizza and entering his credentials. A SOAP request is sent to the pizza-reservation server.
+2. A thread is accepting TCP connections using [accept](http://man7.org/linux/man-pages/man2/accept.2.html) through a loop. Some connections can be put in a queue if the loop is not fast enough, or simply discarded if the queue is full.
+3. 
 
+Scale by the number of restaurants in the chain.
 
 #### **Ngin O' Pepperonix** solution:
 
@@ -52,6 +57,9 @@ If this workload management seems counterintuitive, it actually reflects the arc
 If I am not waiting, then who will do it for me?
 
 
+How would it scale?
 Bring some curves!
 
-#### Real code:
+
+
+#### Time for a bit of code:
