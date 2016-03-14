@@ -1,4 +1,4 @@
-Title: My favorite pizzeria is asynchronous and event-driven... my back-end server too
+Title: My favorite pizzeria is event-driven... my back-end server too (C++, Python)
 Date: 14:00 01-10-2016 
 Modified: 14:00 01-10-2016
 Tags: C++14, Python, event-driven, asynchronous architecture
@@ -21,7 +21,7 @@ We will soon discover the Secret Recipe that **Ngin O' Pepperonix** used to conq
 
 #### **Apach' Hut's** traditional management:
 
-**Apach' Hut** was the favorite pizza food delivery brand in the Silicon Valley for the past decade. Everyone love the quality of their pizzas, the staff and its clean online menu. Everyone recognise that the on-call delivery of **Apach' Hut** is usually pleasing, but it simply can't cope the amount of clients during rush hours. From an external point of view, it looks like the pizza delivering process is satured very quickly at lunch time. Their web-service becomes equally unreachable. On contrary, some pretend that **Ngin O' Pepperonix** is flawless on that point.
+**Apach' Hut** was the favorite pizza food delivery brand in the Silicon Valley for the past decade. Everyone love the quality of their pizzas, the staff and its clean online menu. Everyone recognise that the on-call delivery of **Apach' Hut** is usually pleasing, but it simply can't cope the amount of clients during rush hours. From an external point of view, it looks like the pizza delivering process is satured very quickly at lunch time. Their web-service becomes equally unreachable. On contrary, some pretend that **Ngin O' Pepperonix** is flawless on these points.
 
 ##### In the kitchen:
 Let's take a look on how is a phone request served in **Apach' Hut**:
@@ -32,21 +32,32 @@ Let's take a look on how is a phone request served in **Apach' Hut**:
 4. Once a cook acquires a pizza request, he will head to the warehouse to get ingredients. If lucky, the warehouse contains enough tomatoes, shrooms, bacon... But it is not unusual that the warehouse is out of stock in one of the precious substance for an amazing pizza. The agent must therefore **wait passively** for the next delivery from the main warehouse between **0 to 30min**.
 5. After the warehouse detour, finally starts the cook's mission. The cook shines for **15min**, during which he magically executes his own recipe.
 6. Time to put the pizza in the oven and... light a cigarette. Anyway the cook must wait **30min**, **taskless**.
-7. Finally, the cook wraps the pizza in its box and gives it to one of these crazy delivery boys we are used to in Europe. Sadly, the cook cannot process to another pizza before he ensures that the client is satisfied, **20min** lost in average...
+7. Finally, the cook wraps the pizza in its box and gives it to one of these crazy delivery boys we are used to in Europe. Sadly, the cook cannot process to another pizza before he ensures that the client is satisfied, a **20min** lost in average...
 
 ![Apach' Hut Strategy Scheme]({filename}/images/apachehut.svg)
 
 Did you catch any problem in this strategy? Anything else than the fact that a traditional pizza would be burn after 20min at 210°C? 
 
-Effectively this management is inefficient as Apach' cooks spend a good part of their days doing nothing more than waiting, they are truly **idle**. On a good day, they might work **15 minutes** per hour, it gives them enough time to **sleep** half of the day. Dare not to say that they are sloth, they are actually very skillful employees limited by the company's strategy, a strategy issued by the administration.
+Effectively this management is inefficient as Apach' cooks spend a good part of their days doing nothing more than waiting, they are truly **idle**. On a good day, they might work **15 minutes** per hour, it gives them enough time to **sleep** half of the day. Dare not to say that they are sloths, they are actually very skillful employees limited by the company's strategy, a strategy issued by the administration.
 
-If this workload management seems counterintuitive, it actually reflects the architecture behind a synchronous web-server. Let's see how we could compare Apach' Hut with their online infrastructure.
+If this workload management seems counterintuitive, it actually reflects the architecture behind a synchronous web-server. Let's see how we could compare **Apach' Hut** kitchen nightmare with their online infrastructure.
 
 ##### In the datacenter:
 An online order triggers the following flow in **Apach' Hut** architecture:
-1. A client press the order button after selecting his pizza and entering his credentials. A SOAP request is sent to the pizza-reservation server.
+
+1. A client press the order button after selecting his pizzas and entering his credentials. A SOAP request is sent to the pizza-reservation server.
 2. A thread is accepting TCP connections using [accept](http://man7.org/linux/man-pages/man2/accept.2.html) through a loop. Some connections can be put in a queue if the loop is not fast enough, or simply discarded if the queue is full.
-3. 
+3. The accepted socket is passed as a task to a thread. This **worker-thread** is issued from a **thread-pool** and will manage the client socket for the rest of the reservation process. Sometimes all the worker-threads from the pool are **busy** and the the accepting-thread must **wait** before forwarding its newly created task, wasting precious time!
+4. The worker-thread needs more information regarding the client and must also validate the credentials. In order to do so, the worker-thread will do a REST call to a dedicated internal API. The HTTP communication is implemented using curl in synchronous mode. The worker-thread **waits** in average 500ms to obtain an answer.
+5. Using the client details, the worker-thread will then **compute** the delivery price according to his proximity, the price of the menu, the estimated-time... in less than 10ms.
+6. Now, the reservation must be stored within a database file. Usually, writing a full record to such a database file takes within 10ms to 50ms, but when the Hard Disk Controller is overloaded, the worker-thread can **wait** even longer.
+7. Finally, the reservation has been successfully processed, a HTTP Response is sent to the client's browser and the connection closed.
+
+No needs to be sherlock holmes himself to understand that the same problem arise in their web-service as in their kitchen. The worker-threads are sadly waiting more than they should, similarly to the cooks. If the strategy or architecture of their web-service were better designed, it would squeeze out a maximum of computation power from every thread. At lunch time, running the **top** command on their Unix workstation would depress you, all the threads are idle, but the reservation process is highly saturated.
+
+##### Let's just hire more cooks:
+First and foremost, **Don't Try This at Work**!
+
 
 Scale by the number of restaurants in the chain.
 
