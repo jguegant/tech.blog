@@ -38,7 +38,7 @@ Let's take a look on how is a phone request served in **Apach' Hut**:
 
 Did you catch any problem in this strategy? Anything else than the fact that a traditional pizza would be burn after 20min at 210°C? 
 
-Effectively this management is inefficient as Apach' cooks spend a good part of their days doing nothing more than waiting, they are truly **idle**. On a good day, they might work **15 minutes** per hour, it gives them enough time to **sleep** half of the day. Dare not to say that they are sloths, they are actually very skillful employees limited by the company's strategy, a strategy issued by the administration.
+Effectively this management is inefficient as Apach' cooks spend a good part of their days doing nothing more than waiting, they are truly **idle**. On a good day, they might work **15 minutes** per hour, it gives them enough time to **sleep** half of the day. Dare not to say that they are sloths, they are actually very skillful employees limited by the company's strategy, a strategy issued by the administration. Apach' is therefore quickly running out of control if it receives more calls than the cooks can handle. 
 
 If this workload management seems counterintuitive, it actually reflects the architecture behind a synchronous web-server. Let's see how we could compare **Apach' Hut** kitchen nightmare with their online infrastructure.
 
@@ -47,19 +47,25 @@ An online order triggers the following flow in **Apach' Hut** architecture:
 
 1. A client press the order button after selecting his pizzas and entering his credentials. A SOAP request is sent to the pizza-reservation server.
 2. A thread is accepting TCP connections using [accept](http://man7.org/linux/man-pages/man2/accept.2.html) through a loop. Some connections can be put in a queue if the loop is not fast enough, or simply discarded if the queue is full.
-3. The accepted socket is passed as a task to a thread. This **worker-thread** is issued from a **thread-pool** and will manage the client socket for the rest of the reservation process. Sometimes all the worker-threads from the pool are **busy** and the the accepting-thread must **wait** before forwarding its newly created task, wasting precious time!
+3. The accepted socket is passed as a task to a thread. This **worker-thread** is issued from a [thread-pool](https://en.wikipedia.org/wiki/Thread_pool) and will manage the client socket for the rest of the reservation process. Sometimes all the worker-threads from the pool are **busy** and the the accepting-thread must **wait** before forwarding its newly created task, wasting precious time!
 4. The worker-thread needs more information regarding the client and must also validate the credentials. In order to do so, the worker-thread will do a REST call to a dedicated internal API. The HTTP communication is implemented using curl in synchronous mode. The worker-thread **waits** in average 500ms to obtain an answer.
 5. Using the client details, the worker-thread will then **compute** the delivery price according to his proximity, the price of the menu, the estimated-time... in less than 10ms.
 6. Now, the reservation must be stored within a database file. Usually, writing a full record to such a database file takes within 10ms to 50ms, but when the Hard Disk Controller is overloaded, the worker-thread can **wait** even longer.
-7. Finally, the reservation has been successfully processed, a HTTP Response is sent to the client's browser and the connection closed.
+7. Finally, the reservation has been successfully processed, a HTTP Response is sent to the client's browser and the connection closed. The worker-thread can be placed back to the pool, awaiting for a new task.
 
-No needs to be sherlock holmes himself to understand that the same problem arise in their web-service as in their kitchen. The worker-threads are sadly waiting more than they should, similarly to the cooks. If the strategy or architecture of their web-service were better designed, it would squeeze out a maximum of computation power from every thread. At lunch time, running the **top** command on their Unix workstation would depress you, all the threads are idle, but the reservation process is highly saturated.
+No needs to be sherlock holmes himself to understand that the same problem arise in their web-service as in their kitchen. The worker-threads are sadly waiting more than they should, similarly to the cooks. In the meantime, no requests can be served. At lunch time, running the **top** command on their Unix workstation would depress you, all the threads are idle, but the reservation process is highly saturated. If the strategy or architecture of their web-service were better designed, it would squeeze out a maximum of computation power from every thread.
 
-##### Let's just hire more cooks:
-First and foremost, **Don't Try This at Work**!
+##### Scaling analysis:
+Considering the following architecture, could you easily scale according to the number of clients? The answer is, sadly, no!
+
+Why could we not either spawn a thread per client or simply increase the size of the pool? It boils down to the price of such a tactic. Likewise a cook has a salary, a thread from your operating system is not cheap. Too many cooks would explose your yearly budget, too many threads will consume all your resources. For instance, a Linux thread needs its own stack with a default memory footprint of 2 megabytes. A server with 4 Gigabytes of RAM would have a limit of 2000 simultaneous threads... but that's only considering the stack size. A thread creation implies some costly system calls, a tricky manipulation of various descriptors. Finally, if a kitchen had 2000 cooks, there would be a very high number of collisions, smashed toes and bad words, it would the same mess for the [scheduling](https://en.wikipedia.org/wiki/Scheduling_(computing)) of a massive amount of threads.
+
+Scaling by spawning processes is also a no go. Threads and processes in Linux are actually very similar, you will fight the same problems concerning resources usage. Another solution would be to scale by hardware. But, well, if all the restaurant chains were to rent a new spot everytime they need to handle 10 more clients, they would quickly bankrup... isn't it?
 
 
-Scale by the number of restaurants in the chain.
+
+Some threads can be lightweights, see green threads.
+A special usage.
 
 #### **Ngin O' Pepperonix** solution:
 
@@ -70,6 +76,8 @@ If I am not waiting, then who will do it for me?
 
 How would it scale?
 Bring some curves!
+
+
 
 
 
