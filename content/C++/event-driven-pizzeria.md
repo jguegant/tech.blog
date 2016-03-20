@@ -56,18 +56,26 @@ An online order triggers the following flow in **Apach' Hut** architecture:
 No needs to be sherlock holmes himself to understand that the same problem arise in their web-service as in their kitchen. The worker-threads are sadly waiting more than they should, similarly to the cooks. In the meantime, no requests can be served. At lunch time, running the **top** command on their Unix workstation would depress you, all the threads are idle, but the reservation process is highly saturated. If the strategy or architecture of their web-service were better designed, it would squeeze out a maximum of computation power from every thread.
 
 ##### Scaling analysis:
-Considering the following architecture, could you easily scale according to the number of clients? The answer is, sadly, no!
+Considering the following architecture, could you easily scale according to the number of clients? The answer is, sadly, **no**!
 
 Why could we not either spawn a thread per client or simply increase the size of the pool? It boils down to the price of such a tactic. Likewise a cook has a salary, a thread from your operating system is not cheap. Too many cooks would explose your yearly budget, too many threads will consume all your resources. For instance, a Linux thread needs its own stack with a default memory footprint of 2 megabytes. A server with 4 Gigabytes of RAM would have a limit of 2000 simultaneous threads... but that's only considering the stack size. A thread creation implies some costly system calls, a tricky manipulation of various descriptors. Finally, if a kitchen had 2000 cooks, there would be a very high number of collisions, smashed toes and bad words, it would the same mess for the [scheduling](https://en.wikipedia.org/wiki/Scheduling_(computing)) of a massive amount of threads.
 
-Scaling by spawning processes is also a no go. Threads and processes in Linux are actually very similar, you will fight the same problems concerning resources usage. Another solution would be to scale by hardware. But, well, if all the restaurant chains were to rent a new spot everytime they need to handle 10 more clients, they would quickly bankrup... isn't it?
+Scaling by spawning processes is also a no go. Threads and processes in Linux are actually very similar, you will fight the same problems concerning resources usage. Another solution would be to scale by hardware. But, well, if all the restaurant chains were to open a new spot everytime they need to handle 10 more clients, they would quickly bankrup... isn't it?
 
+![Ngin O' Pepperonix Strategy Scheme]({filename}/images/bad-scaling.png)
 
+In all these solutions, if you observe the resource comsuption regarding the number of clients, in the best case you will see a **<span style='color:blue'>linear complexity</span>**. It can easily turn out into a much worse complexity like a **<span style='color:red'>polynomial one</span>**. As a software engineer, such a graph must make you frown, none of us want to see a polynomial memory usage in his system especially when correlated to such a trivial entity that is a user. If you replace the word **resource** with **operating costs**, even your shareholders might have a stroke.
 
-Some threads can be lightweights, see green threads.
-A special usage.
+One must keep in mind that this kind of architecture is really **bad** if you are expecting to scale with the number of **clients**. If you have a **fixed maximum** number of clients or you are working on **one to one** communications, this architecture is actually relevant. For instance, in High Frequency Trading, where **latency** is much more precious than **scalability** it is not uncommon to opt for [busy waiting](https://en.wikipedia.org/wiki/Busy_waiting). In other words, if you are cooking a pizza for yourself, it does not matter if you spend 45min in front of your oven.
+
+Some languages and platforms offer lite threads, handled by a runtime or a virtual machine instead of the operating system. Even if these [green threads](https://en.wikipedia.org/wiki/Green_threads) are considerably less costly, they usually freeze all the other threads during synchronous I/O operations. It is crucial to understand how we could almost reach a **<span style='color:green'>constant complexity</span>**, using asynchronous I/O operations, like in the following graph:
+
+![Ngin O' Pepperonix Strategy Scheme]({filename}/images/good-scaling.png)
+
 
 #### **Ngin O' Pepperonix** solution:
+
+Back to the kitchen, **Ngin O' Pepperonix** solved this problem by providing to each of its employees
 
 ![Ngin O' Pepperonix Strategy Scheme]({filename}/images/nginxopepperoni.svg)
 
