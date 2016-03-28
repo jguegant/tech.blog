@@ -68,19 +68,117 @@ In all these solutions, if you observe the resource comsuption regarding the num
 
 One must keep in mind that this kind of architecture is really **bad** if you are expecting to scale with the number of **clients**. If you have a **fixed maximum** number of clients or you are working on **one to one** communications, this architecture is actually relevant. For instance, in High Frequency Trading, where **latency** is much more precious than **scalability** it is not uncommon to opt for [busy waiting](https://en.wikipedia.org/wiki/Busy_waiting). In other words, if you are cooking a pizza for yourself, it does not matter if you spend 45min in front of your oven.
 
-Some languages and platforms offer lite threads, handled by a runtime or a virtual machine instead of the operating system. Even if these [green threads](https://en.wikipedia.org/wiki/Green_threads) are considerably less costly, they usually freeze all the other threads during synchronous I/O operations. It is crucial to understand how we could almost reach a **<span style='color:green'>constant complexity</span>**, using asynchronous I/O operations, like in the following graph:
+Some languages and platforms offer lite threads, handled by a runtime or a virtual machine instead of the operating system. Even if these [green threads](https://en.wikipedia.org/wiki/Green_threads) are considerably less costly, they usually freeze all the other threads during synchronous I/O operations. It is still crucial to understand how we could almost reach a **<span style='color:green'>constant complexity</span>**, using asynchronous I/O operations, like in the following graph:
 
 ![Ngin O' Pepperonix Strategy Scheme]({filename}/images/good-scaling.png)
 
 
 #### **Ngin O' Pepperonix** solution:
 
-Back to the kitchen, **Ngin O' Pepperonix** solved this problem by providing to each of its employees
+##### An event-driven kitchen:
+
+Back to the kitchen! **Ngin O' Pepperonix** solved this problem by providing to each of its employees a tablet with a to-do list application and upgrading its equipments. For instance, ovens can raise an **event** when the pizza has been baked enough, the food delivery can trigger another kind of event and same goes for client calls. All the events are broadcasted on the workers' tablets. When a worker is dealing with a task that requires him to wait, he can **poll** the most urgent **event** and continue to work on something else instead. Even if he cannot finish his new task before the waiting period elapse, someone else might receive the event and handle the rest of the process.
 
 ![Ngin O' Pepperonix Strategy Scheme]({filename}/images/nginxopepperoni.svg)
 
-If I am not waiting, then who will do it for me?
+Workers are now as efficient as possible. They must spend a bit of their time checking their tablet, but they have absolutely no wait-periods anymore unless no events are available (but it is perfectly sane to relax in that case). Instead of waiting blatantly all the day, **cooks** are now mainly **cooking**. **Ngin O' Pepperonix** can easily handle **50 clients** with only **1 cook**, that sounds much better!
 
+If we still consider the analogy **cook** =~ **thread**. In order to recreate such a successful architecture, we would need "news technologies" for generating and managing events from a thread and the "long operations". Using **events**, the number of threads must be increased only if it reaches the max CPU usage of some cores. Thanksfully, as we saw previously, the process has never been much CPU-bound, getting the right delivery price was the only computation ever done. This kind of architecture is therefore almost not bound to number of clients, we finally reach the **<span style='color:green'>constant complexity</span>**. For instance, **Node.js** only uses one and only one thread and yet perform quite with a huge number of clients!
+
+Any drawback? Well, this kind of architecture might seems more intuitive to us humans used to [multitask](https://en.wikipedia.org/wiki/Human_multitasking) everything in our daily-life. But first, the technologies required for the **tablets** and the **connected-ovens** have a **price**, in our programming world this cost is express in the shape of some more complex operating system internals and libraries. Second, it is actually harder than you may think to **decouple** everything in events without ending with some race-conditions, a callbacks hell or unreliable performances.
+
+##### Asynchronous weapons:
+
+Here is a quick overview of the various asynchronous technologies that can be used to achieve such an architecture. It is not that usual to manipulate them directly, most of us will prefer to use an abstracted library for his favorite language as we will see later on. If you greetly interest in such internals, I highly suggest you to read the really famous [C10K problem post](http://www.kegel.com/c10k.html) or for instance this [post from George Y.](http://www.ulduzsoft.com/2014/01/select-poll-epoll-practical-difference-for-system-architects/)
+
+###### Proactor, reactor and event-loops:
+
+The base of every event-driven architecture consists of **operations** and **events**. Two patterns exists when it comes to mix both.
+
+The first one, **Proactor**, is for me the easiest to grasp. As a user you initiate asynchronous operations, these operations will be performed soon or later by the underlying system. Most of the time these operations are **Input/Output operations** (I/O operations), but it can also be a timer for instance. Once the operations are done, you will receive **events** in a queue telling you which of your operations have been done.
+
+The second one, **Reactor**, is slightly more awkward. As a user you have the possibility to query the underlying system to know whether the operation you wish to do will be blocking due to the resource not being available, or not. By constantly **polling** the underlying system, you can wait for the right time to do a synchronous operation without blocking, the resource being available at that time.
+
+If **Proactor** looks more promising, you can actually express **Proactor** using **Reactor** facilities. Using another **queue**, one can store the operations to be done and their associated **event types**. Once the underlying system express the possibility to do a synchronous operation without blocking, the first operation in the queue can be taken, executed and the associated event can be push in the event queue. From a user point of view, pushing a "to-be-done operation" is asynchronous and the right event will be raised once the operation is done ; that is exactly **Proactor**.
+
+Both of these patterns permit to express an **event-loop** which is the base for an event-driven architecture:
+
+    :::c++
+    // Pseudo-code for an event-loop:
+
+    DoAsynchronousOperationA(); // A first operation!
+
+    while (true) {
+        if (!eventsQueue.empty()) {
+            auto event = eventsQueue.pop();
+
+            switch (event) {
+                case EVENT_A: // In reaction of the EVENT_A...
+                    DoSomeComputation(); // ...I will do some computations...
+                    ...
+                    DoAsynchronousOperationB(); // ...and do another asynchronous operation that will raise an event B.
+                    ...
+                    DoSomeOtherComputation();
+                break;
+                case EVENT_B:
+                    DoSomeComputation();
+                    DoAsynchronousOperationA();
+                    ...
+                break;
+                ...
+            }
+        }
+    }
+
+You will notice that you must start a **first asynchronous operation**, before entering the loop, as a **bootstrap**. Otherwise, the queue **eventsQueue** would be forever empty, and your processus would never change its state.
+
+In a more refined pattern, it is also possible to associate some [callbacks]( https://en.wikipedia.org/wiki/Callback_(computer_programming) ) function to some **events** or **asynchronous operations**:
+
+
+    :::c++
+    // Pseudo-code for a refined event-loop using callbacks:
+
+    void aCallBackForA() // A callback in reaction of the EVENT_A...
+    {
+        DoSomeComputation(); // ...I will do some computations...
+        DoAsynchronousOperationB(aCallBackForB); // ...and do another asynchronous operation that will aCallBackForB.
+        DoSomeOtherComputation();
+    }
+
+    void aCallBackForB() // A callback in reaction of the EVENT_B...
+    {
+        DoSomeComputation();
+        DoAsynchronousOperationA(aCallBackForA);
+    }
+
+    DoAsynchronousOperationA(aCallBackForA); // A first operation still needed!
+
+    while (true) {
+        if (!eventsQueue.empty()) {
+            auto event = eventsQueue.pop(); // Fetch any new event.
+            auto callback = getCallBackAssociatedToThatEvent(event); // Find the right callback.
+            callback(); // Execute the callback.
+        }
+    }
+
+Most of the libraries or framework for event-driven architectures expose such an interface for running the event loop and doing asynchronous operations associated with callbacks. One thread is enough for running the event-loop!
+
+Using various tools for implementing the **Reactor** or **Proactor** pattern provided by your operating systems, one can 
+
+
+###### At the operating system level:
+
+I was telling you that these technologies are brand new, I am partly a liar. In the **Unix** world, a function called [select](https://en.wikipedia.org/wiki/Select_(Unix)) existed before I was even born. Using **select**, one can inspect the status of multiple components experessable some list of file descriptors, like a list of **sockets**. For instance, If there is the possibility to **read** or **write** on one ore more of these file descriptors, you will be notified
+
+The main advantage of
+
+Pool of threads if nothing to do it asynchronous.
+
+
+More abstract libraries.
+Boost.Asio, libuv
+
+Want to know more about it? read that C10K problem: http://www.kegel.com/c10k.html
 
 How would it scale?
 Bring some curves!
