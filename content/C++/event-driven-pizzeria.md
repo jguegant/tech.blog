@@ -85,21 +85,34 @@ Workers are now as efficient as possible. They must spend a bit of their time ch
 
 If we still consider the analogy **cook** =~ **thread**. In order to recreate such a successful architecture, we would need "news technologies" for generating and managing events from a thread and the "long operations". Using **events**, the number of threads must be increased only if it reaches the max CPU usage of some cores. Thanksfully, as we saw previously, the process has never been much CPU-bound, getting the right delivery price was the only computation ever done. This kind of architecture is therefore almost not bound to number of clients, we finally reach the **<span style='color:green'>constant complexity</span>**. For instance, **Node.js** only uses one and only one thread and yet perform quite with a huge number of clients!
 
-Any drawback? Well, this kind of architecture might seems more intuitive to us humans used to [multitask](https://en.wikipedia.org/wiki/Human_multitasking) everything in our daily-life. But first, the technologies required for the **tablets** and the **connected-ovens** have a **price**, in our programming world this cost is express in the shape of some more complex operating system internals and libraries. Second, it is actually harder than you may think to **decouple** everything in events without ending with some race-conditions, a callbacks hell or unreliable performances.
+Any drawback? Well, event-driven architectures might seems more intuitive to us humans used to [multitask](https://en.wikipedia.org/wiki/Human_multitasking) everything in our daily-life. But first, the technologies required for the **tablets** and the **connected-ovens** have a **price**, in our programming world this cost is express in the shape of some more complex operating system internals and libraries. Second, it is actually harder than you may think to **decouple** everything in events/handlers without ending with some race-conditions, a callbacks hell or unreliable performances.
 
 ##### Asynchronous weapons:
 
 Here is a quick overview of the various asynchronous technologies that can be used to achieve such an architecture. It is not that usual to manipulate them directly, most of us will prefer to use an abstracted library for his favorite language as we will see later on. If you greetly interest in such internals, I highly suggest you to read the really famous [C10K problem post](http://www.kegel.com/c10k.html) or for instance this [post from George Y.](http://www.ulduzsoft.com/2014/01/select-poll-epoll-practical-difference-for-system-architects/)
 
-###### Proactor, reactor and event-loops:
+###### Proactor & reactor, edge triggered & level triggered:
 
-The base of every event-driven architecture consists of **operations** and **events**. Two patterns exists when it comes to mix both.
+Let's start with a bit of vocabulary that you may encounter if you are digging into event-driven architectures or more precisely [I/O multiplexing](https://en.wikipedia.org/wiki/Asynchronous_I/O). 
 
-The first one, **Proactor**, is for me the easiest to grasp. As a user you initiate asynchronous operations, these operations will be performed soon or later by the underlying system. Most of the time these operations are **Input/Output operations** (I/O operations), but it can also be a timer for instance. Once the operations are done, you will receive **events** in a queue telling you which of your operations have been done.
+The base of every event-driven architecture consists of **operations** and **events**. Two patterns exists when it comes to mix both of these concepts. The first one, **Proactor**, is for me the easiest to grasp. As a user you initiate asynchronous operations, these operations will be performed soon or later by the underlying system. Most of the time these operations are **Input/Output operations** (I/O operations), but it can also be a timer for instance. Once the operations are done, you will receive **events** in a queue telling you which of your operations have been done and you can react accordingly.
 
 The second one, **Reactor**, is slightly more awkward. As a user you have the possibility to query the underlying system to know whether the operation you wish to do will be blocking due to the resource not being available, or not. By constantly **polling** the underlying system, you can wait for the right time to do a synchronous operation without blocking, the resource being available at that time.
 
 If **Proactor** looks more promising, you can actually express **Proactor** using **Reactor** facilities. Using another **queue**, one can store the operations to be done and their associated **event types**. Once the underlying system express the possibility to do a synchronous operation without blocking, the first operation in the queue can be taken, executed and the associated event can be push in the event queue. From a user point of view, pushing a "to-be-done operation" is asynchronous and the right event will be raised once the operation is done ; that is exactly **Proactor**.
+
+Now if your **operation** consist in waiting for a given **quantity** of a resource using a **Reactor** pattern, you may want an event to be raised until you successfully acknowledges that **quantity**, that is a **level-triggered** behavior. You may also choose to receive a **single-shot event** when the quantity is available and none afterward whether you acknowledged the whole quantity or not, which is equivalent to a **edge-triggered** behavior. For example, if you express the desire to do a read operation on a [pipe](https://en.wikipedia.org/wiki/Anonymous_pipe), and partially read the data available, two scenarios can happen. If you are using a **level-triggered** behavior, the underlying system will kindly "remind you" that your forget some data to read. With a **edge-triggered** behavior, the underlying system will be silent until more data arrives in the pipe ; that is pretty troublesome if the second process is expecting a reaction from the data already pushed!
+
+Still alive? 
+
+###### At the operating system level:
+
+The questions that often arise are "Isn't it necessary for the underlying system to **wait passively** for the operation to be done? Aren't we just pushing the problem into the kernel?". Well, yes! But the kernel itself will be able to push the problem to the hardware level. For instance, a disk reading operation might just be forwarded by the kernel to the disk controller.
+
+I was telling you that these technologies are brand new, I am partly a liar. In the **Unix** world, a function called [select](https://en.wikipedia.org/wiki/Select_(Unix)) existed before I was even born. Using **select**, one can inspect the status of multiple components experessable some list of file descriptors, like a list of **sockets**. For instance, If there is the possibility to **read** or **write** on one ore more of these file descriptors, you will be notified
+
+
+###### Event loop:
 
 Both of these patterns permit to express an **event-loop** which is the base for an event-driven architecture:
 
@@ -132,7 +145,7 @@ Both of these patterns permit to express an **event-loop** which is the base for
 
 You will notice that you must start a **first asynchronous operation**, before entering the loop, as a **bootstrap**. Otherwise, the queue **eventsQueue** would be forever empty, and your processus would never change its state.
 
-In a more refined pattern, it is also possible to associate some [callbacks]( https://en.wikipedia.org/wiki/Callback_(computer_programming) ) function to some **events** or **asynchronous operations**:
+In a more refined version, it is also possible to associate some [callbacks]( https://en.wikipedia.org/wiki/Callback_(computer_programming) ) function to some **events** or **asynchronous operations**:
 
 
     :::c++
@@ -163,27 +176,8 @@ In a more refined pattern, it is also possible to associate some [callbacks]( ht
 
 Most of the libraries or framework for event-driven architectures expose such an interface for running the event loop and doing asynchronous operations associated with callbacks. One thread is enough for running the event-loop!
 
-Using various tools for implementing the **Reactor** or **Proactor** pattern provided by your operating systems, one can 
-
-
-###### At the operating system level:
-
-I was telling you that these technologies are brand new, I am partly a liar. In the **Unix** world, a function called [select](https://en.wikipedia.org/wiki/Select_(Unix)) existed before I was even born. Using **select**, one can inspect the status of multiple components experessable some list of file descriptors, like a list of **sockets**. For instance, If there is the possibility to **read** or **write** on one ore more of these file descriptors, you will be notified
-
-The main advantage of
-
-Pool of threads if nothing to do it asynchronous.
-
-
 More abstract libraries.
 Boost.Asio, libuv
-
-Want to know more about it? read that C10K problem: http://www.kegel.com/c10k.html
-
-How would it scale?
-Bring some curves!
-
-
 
 
 
