@@ -93,7 +93,7 @@ Here is a quick overview of the various asynchronous technologies that can be us
 
 ###### Proactor & reactor, edge triggered & level triggered:
 
-Let's start with a bit of vocabulary that you may encounter if you are digging into event-driven architectures or more precisely [I/O multiplexing](https://en.wikipedia.org/wiki/Asynchronous_I/O). 
+We should start with a bit of vocabulary that you may encounter if you are digging into event-driven architectures or [I/O multiplexing](https://en.wikipedia.org/wiki/Asynchronous_I/O). 
 
 The base of every event-driven architecture consists of **operations** and **events**. Two patterns exists when it comes to mix both of these concepts. The first one, **Proactor**, is for me the easiest to grasp. As a user you initiate asynchronous operations, these operations will be performed soon or later by the underlying system. Most of the time these operations are **Input/Output operations** (I/O operations), but it can also be a timer for instance. Once the operations are done, you will receive **events** in a queue telling you which of your operations have been done and you can react accordingly.
 
@@ -101,16 +101,19 @@ The second one, **Reactor**, is slightly more awkward. As a user you have the po
 
 If **Proactor** looks more promising, you can actually express **Proactor** using **Reactor** facilities. Using another **queue**, one can store the operations to be done and their associated **event types**. Once the underlying system express the possibility to do a synchronous operation without blocking, the first operation in the queue can be taken, executed and the associated event can be push in the event queue. From a user point of view, pushing a "to-be-done operation" is asynchronous and the right event will be raised once the operation is done ; that is exactly **Proactor**.
 
-Now if your **operation** consist in waiting for a given **quantity** of a resource using a **Reactor** pattern, you may want an event to be raised until you successfully acknowledges that **quantity**, that is a **level-triggered** behavior. You may also choose to receive a **single-shot event** when the quantity is available and none afterward whether you acknowledged the whole quantity or not, which is equivalent to a **edge-triggered** behavior. For example, if you express the desire to do a read operation on a [pipe](https://en.wikipedia.org/wiki/Anonymous_pipe), and partially read the data available, two scenarios can happen. If you are using a **level-triggered** behavior, the underlying system will kindly "remind you" that your forget some data to read. With a **edge-triggered** behavior, the underlying system will be silent until more data arrives in the pipe ; that is pretty troublesome if the second process is expecting a reaction from the data already pushed!
+Now if your **operation** consist in waiting for a given **quantity** of a resource using a **Reactor** pattern, you may want an event to be raised until you successfully acknowledges that **quantity**, that is a **level-triggered** behavior. You may also choose to receive a **single-shot event** when the quantity is available and none afterward whether you acknowledged the whole quantity or not, which is equivalent to a **edge-triggered** behavior. For example, if you express the desire to do a read operation on a [pipe](https://en.wikipedia.org/wiki/Anonymous_pipe), and partially read the data available, two scenarios can happen. If you are using a **level-triggered** behavior, the underlying system will kindly "remind you" that your forget some data. With a **edge-triggered** behavior, the underlying system will be silent until more data arrives in the pipe ; that is pretty troublesome if the process at the end of the pipe is expecting a reaction from the data it already pushed!
 
-Still alive? 
+Still alive with this vocabulary? Here comes the tools exposed by your operating systems, following either the **Reactor** or the **Proactor** pattern, to craft asynchronous operations.
 
 ###### At the operating system level:
 
-The questions that often arise are "Isn't it necessary for the underlying system to **wait passively** for the operation to be done? Aren't we just pushing the problem into the kernel?". Well, yes! But the kernel itself will be able to push the problem to the hardware level. For instance, a disk reading operation might just be forwarded by the kernel to the disk controller.
 
-I was telling you that these technologies are brand new, I am partly a liar. In the **Unix** world, a function called [select](https://en.wikipedia.org/wiki/Select_(Unix)) existed before I was even born. Using **select**, one can inspect the status of multiple components experessable some list of file descriptors, like a list of **sockets**. For instance, If there is the possibility to **read** or **write** on one ore more of these file descriptors, you will be notified
+The questions that often arise are "Isn't it necessary for the underlying system to **wait actively** for any operation to be done? Aren't we just pushing the problem into the kernel?". Well, yes! But the kernel itself will be able to push the problem to the hardware level. For instance, a disk reading operation might just be forwarded by the kernel to the disk controller.
 
+I was telling you that these technologies are brand new, I am partly a liar. In the **Unix** world, a function called [select](https://en.wikipedia.org/wiki/Select_(Unix)) existed before I was even born. Using **select**, one can inspect the status of multiple components experessable some list of file descriptors, like a list of **sockets**. For instance, If there is the possibility to **read** or **write** on one ore more of these file descriptors, you will be notified.
+Available everywhere, your <del>smart-fridge</del>
+
+Reactor more popular as a system implementation. 
 
 ###### Event loop:
 
@@ -182,3 +185,8 @@ Boost.Asio, libuv
 
 
 #### Time for a bit of code:
+
+
+#### Conclusion:
+A good introduction for some other posts.
+Running joke
