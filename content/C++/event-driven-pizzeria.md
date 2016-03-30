@@ -107,11 +107,25 @@ Still alive with this vocabulary? Here comes the tools exposed by your operating
 
 ###### At the operating system level:
 
+The questions that often arise are "Isn't it necessary for the underlying system to **wait actively** for any operation to be done? Aren't we just pushing the problem into the kernel?". Well, yes! But the kernel itself could be able to push the problem to the hardware level. For instance, a file read operation might just be forwarded by the kernel to the disk controller ; using [interruptions](https://en.wikipedia.org/wiki/Interrupt_request_(PC_architecture)) the disk controller can signal asynchronously the kernel that the disk request has been fulfilled. This signal can be bubbled back to the [userland](https://en.wikipedia.org/wiki/User_space) in the shape of an event. **A lot** can be done by an application during the lapse of time of a disk operation!
 
-The questions that often arise are "Isn't it necessary for the underlying system to **wait actively** for any operation to be done? Aren't we just pushing the problem into the kernel?". Well, yes! But the kernel itself will be able to push the problem to the hardware level. For instance, a disk reading operation might just be forwarded by the kernel to the disk controller.
+- **Select**:
 
-I was telling you that these technologies are brand new, I am partly a liar. In the **Unix** world, a function called [select](https://en.wikipedia.org/wiki/Select_(Unix)) existed before I was even born. Using **select**, one can inspect the status of multiple components experessable some list of file descriptors, like a list of **sockets**. For instance, If there is the possibility to **read** or **write** on one ore more of these file descriptors, you will be notified.
-Available everywhere, your <del>smart-fridge</del>
+I was telling you that these technologies are brand new, I am partly a liar. In the **Unix** & **POSIX** world, a function called [select](https://en.wikipedia.org/wiki/Select_(Unix)) existed even before I was born. Using **select**, one can inspect the status of multiple file descriptors, like some **sockets**. In order to do so, you pass to **select** three different sets of file descriptors: a **read** set, a **write** set, and an **exception** set. The call to **select** will block until one of this set has been updated or after a **timeout** (Note that the timeout is really important here, otherwise we would come back to a simple synchronous solution!). Afterwards, one must iterate on each set to check which file descriptor became ready for a read or write operation (hopefully not blocking) or if any error has been encountered. **Select** is intrinsically a **Reactor** pattern.
+
+**Select** shines for its aivability almost everywhere: on your Linux server, on your windows laptop (yes, windows has a Berkeley Sockets API), on your Android Phone or even your <del>smart-fridge</del>. **Select** sets manipulations are not really user friendly. But the main drawbacks of **select** are the maximum number of items in a set and the manual iteration on the sets. On a standard Linux, the limit of items is 1024, which is fairly low if you plan to handle 20 000 connections simulteanously. The mandatory iteration on the sets to pin-point the interesting file descriptors has a complexity of **O(n)**, a complexity that could be **O(1)** if the kernel were pruning the unchanged file descriptors.
+
+- **Poll & epoll**:
+
+test
+
+- **Kqueue**:
+
+- **create event**:
+
+- **IOCP**:
+
+- **Specific APIs**:
 
 Reactor more popular as a system implementation. 
 
