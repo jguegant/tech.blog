@@ -113,15 +113,22 @@ The questions that often arise are "Isn't it necessary for the underlying system
 
 I was telling you that these technologies are brand new, I am partly a liar. In the **Unix** & **POSIX** world, a function called [select](https://en.wikipedia.org/wiki/Select_(Unix)) existed even before I was born. Using **select**, one can inspect the status of multiple file descriptors, like some **sockets**. In order to do so, you pass to **select** three different sets of file descriptors: a **read** set, a **write** set, and an **exception** set. The call to **select** will block until one of this set has been updated or after a **timeout** (Note that the timeout is really important here, otherwise we would come back to a simple synchronous solution!). Afterwards, one must iterate on each set to check which file descriptor became ready for a read or write operation (hopefully not blocking) or if any error has been encountered. **Select** is intrinsically a **Reactor** pattern.
 
-**Select** shines for its aivability almost everywhere: on your Linux server, on your windows laptop (yes, windows has a Berkeley Sockets API), on your Android Phone or even your <del>smart-fridge</del>. **Select** sets manipulations are not really user friendly. But the main drawbacks of **select** are the maximum number of items in a set and the manual iteration on the sets. On a standard Linux, the limit of items is 1024, which is fairly low if you plan to handle 20 000 connections simulteanously. The mandatory iteration on the sets to pin-point the interesting file descriptors has a complexity of **O(n)**, a complexity that could be **O(1)** if the kernel were pruning the unchanged file descriptors.
+**Select** shines for its aivability almost everywhere: on your Linux server, on your windows laptop (yes, windows has a Berkeley Sockets API), on your Android Phone or even your <del>smart-fridge</del>. On the other hand, **select** sets manipulations are not really user friendly. But the main drawbacks of **select** are the maximum number of items in a set, the manual iteration on the sets. On a standard **Linux kernel**, the limit of items is 1024, which is fairly low if you plan to handle 20 000 connections simulteanously. The mandatory iteration on the sets to pin-point the interesting file descriptors has a complexity of **O(n)**, a complexity that could be **O(1)** if the kernel were pruning the unchanged file descriptors directly. As we will see, the teams behind **Windows NT**, **FreeBSD** and **Linux** unsatisfied with **select** authored their own solutions to solve these problems.
 
 - **Poll & epoll**:
 
-test
+The [poll](http://man7.org/linux/man-pages/man2/poll.2.html) system call is an "upgraded version" of **select**: it can handle as many file descriptors as desired and more finely. Sadly, **poll** still requires a manual iterations on the file descriptor set and has a clumsy interface. **Poll** is also less portable than **select**.
+
+Starting with the version 2.5.44 of the **Linux kernel** (at the beggining of this century), a new poll API on steroid appeared: namely [epoll](http://man7.org/linux/man-pages/man7/epoll.7.html). It fixes all the major problems of its predecessors with a trade-off of being more convoluted. **Epoll** is using the **Reactor** pattern and also offers the possibility to choose between a **edge-triggered** or **level-triggered** behavior. If you are a **Linux** aficionados in needs of challenges with a low-level API, **epoll** is the way to go in 2016 for building a scalable network solution (and most likely in 2017), I would recommand to use.
+
+Not portable out of the Linux world, can only manipulate
+
+- **create event**:
 
 - **Kqueue**:
 
-- **create event**:
+
+
 
 - **IOCP**:
 
