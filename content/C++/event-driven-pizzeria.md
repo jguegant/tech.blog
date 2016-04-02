@@ -21,7 +21,7 @@ We will soon discover the Secret Recipe that **Ngin O' Pepperonix** used to conq
 
 #### **Apach' Hut's** traditional management:
 
-**Apach' Hut** was the favorite pizza food delivery brand in the Silicon Valley for the past decade. Everyone love the quality of their pizzas, the staff and its clean online menu. Everyone recognise that the on-call delivery of **Apach' Hut** is usually pleasing, but it simply can't cope the amount of clients during rush hours. From an external point of view, it looks like the pizza delivering process is satured very quickly at lunch time. Their web-service becomes equally unreachable. On contrary, some pretend that **Ngin O' Pepperonix** is flawless on these points.
+**Apach' Hut** was the favorite pizza food delivery brand in the Silicon Valley for the past decade. Everyone love the quality of their pizzas, the staff and its clean online menu. Everyone recognise that the on-call delivery of **Apach' Hut** is usually pleasing, but it simply can't cope the amount of clients during rush hours. From an external point of view, it looks like the pizza delivering process is saturated very quickly at lunch time. Their web-service becomes equally unreachable. On contrary, some pretend that **Ngin O' Pepperonix** is flawless on these points.
 
 ##### In the kitchen:
 Let's take a look on how is a phone request served in **Apach' Hut**:
@@ -58,13 +58,13 @@ No needs to be sherlock holmes himself to understand that the same problem arise
 ##### Scaling analysis:
 Considering the following architecture, could you easily scale according to the number of clients? The answer is, sadly, **no**!
 
-Why could we not either spawn a thread per client or simply increase the size of the pool? It boils down to the price of such a tactic. Likewise a cook has a salary, a thread from your operating system is not cheap. Too many cooks would explose your yearly budget, too many threads will consume all your resources. For instance, a Linux thread needs its own stack with a default memory footprint of 2 megabytes. A server with 4 Gigabytes of RAM would have a limit of 2000 simultaneous threads... but that's only considering the stack size. A thread creation implies some costly system calls, a tricky manipulation of various descriptors. Finally, if a kitchen had 2000 cooks, there would be a very high number of collisions, smashed toes and bad words, it would the same mess for the [scheduling](https://en.wikipedia.org/wiki/Scheduling_(computing)) of a massive amount of threads.
+Why could we not either spawn a thread per client or simply increase the size of the pool? It boils down to the price of such a tactic. Likewise a cook has a salary, a thread from your operating system is not cheap. Too many cooks would explode your yearly budget, too many threads will consume all your resources. For instance, a Linux thread needs its own stack with a default memory footprint of 2 megabytes. A server with 4 Gigabytes of RAM would have a limit of 2000 simultaneous threads... but that's only considering the stack size. A thread creation implies some costly system calls, a tricky manipulation of various descriptors. Finally, if a kitchen had 2000 cooks, there would be a very high number of collisions, smashed toes and bad words, it would the same mess for the [scheduling](https://en.wikipedia.org/wiki/Scheduling_(computing)) of a massive amount of threads.
 
-Scaling by spawning processes is also a no go. Threads and processes in Linux are actually very similar, you will fight the same problems concerning resources usage. Another solution would be to scale by hardware. But, well, if all the restaurant chains were to open a new spot everytime they need to handle 10 more clients, they would quickly bankrup... isn't it?
+Scaling by spawning processes is also a no go. Threads and processes in Linux are actually very similar, you will fight the same problems concerning resources usage. Another solution would be to scale by hardware. But, well, if all the restaurant chains were to open a new spot every time they need to handle 10 more clients, they would quickly bankrupt... isn't it?
 
 ![Ngin O' Pepperonix Strategy Scheme]({filename}/images/bad-scaling.png)
 
-In all these solutions, if you observe the resource comsuption regarding the number of clients, in the best case you will see a **<span style='color:blue'>linear complexity</span>**. It can easily turn out into a much worse complexity like a **<span style='color:red'>polynomial one</span>**. As a software engineer, such a graph must make you frown, none of us want to see a polynomial memory usage in his system especially when correlated to such a trivial entity that is a user. If you replace the word **resource** with **operating costs**, even your shareholders might have a stroke.
+In all these solutions, if you observe the resource consumption regarding the number of clients, in the best case you will see a **<span style='color:blue'>linear complexity</span>**. It can easily turn out into a much worse complexity like a **<span style='color:red'>polynomial one</span>**. As a software engineer, such a graph must make you frown, none of us want to see a polynomial memory usage in his system especially when correlated to such a trivial entity that is a user. If you replace the word **resource** with **operating costs**, even your shareholders might have a stroke.
 
 One must keep in mind that this kind of architecture is really **bad** if you are expecting to scale with the number of **clients**. If you have a **fixed maximum** number of clients or you are working on **one to one** communications, this architecture is actually relevant. For instance, in High Frequency Trading, where **latency** is much more precious than **scalability** it is not uncommon to opt for [busy waiting](https://en.wikipedia.org/wiki/Busy_waiting). In other words, if you are cooking a pizza for yourself, it does not matter if you spend 45min in front of your oven.
 
@@ -89,13 +89,13 @@ Any drawback? Well, event-driven architectures might seems more intuitive to us 
 
 ##### Asynchronous weapons:
 
-Here is a quick overview of the various asynchronous technologies that can be used to achieve such an architecture. It is not that usual to manipulate them directly, most of us will prefer to use an abstracted library for his favorite language as we will see later on. If you greetly interest in such internals, I highly suggest you to read the really famous [C10K problem post](http://www.kegel.com/c10k.html) or for instance this [post from George Y.](http://www.ulduzsoft.com/2014/01/select-poll-epoll-practical-difference-for-system-architects/)
+Here is a quick overview of the various technologies that can be used to achieve such an architecture. It is not that usual to manipulate them directly, most of us will prefer to use an abstracted library for his favorite language as we will see later on. If you are greatly interested in such internals, I highly suggest you to read the really famous [C10K problem post](http://www.kegel.com/c10k.html) or for instance this [post from George Y.](http://www.ulduzsoft.com/2014/01/select-poll-epoll-practical-difference-for-system-architects/)
 
 ###### Proactor & reactor, edge triggered & level triggered:
 
 We should start with a bit of vocabulary that you may encounter if you are digging into event-driven architectures or [I/O multiplexing](https://en.wikipedia.org/wiki/Asynchronous_I/O). 
 
-The base of every event-driven architecture consists of **operations** and **events**. Two patterns exists when it comes to mix both of these concepts. The first one, **Proactor**, is for me the easiest to grasp. As a user you initiate asynchronous operations, these operations will be performed soon or later by the underlying system. Most of the time these operations are **Input/Output operations** (I/O operations), but it can also be a timer for instance. Once the operations are done, you will receive **events** in a queue telling you which of your operations have been done and you can react accordingly.
+The base of every event-driven architecture consists of **operations** and **events**. Two patterns exists when it comes to mix both of these concepts. The first one, **Proactor**, is for me the easiest to grasp. As a user you initiate asynchronous operations, these operations will be performed soon or later by the underlying system. Most of the time these operations are **Input/Output operations** (I/O operations), but it can also be a timer for instance. Once the operations are done, you will receive **events** in a queue telling you which of your operations are done and so that you can react accordingly.
 
 The second one, **Reactor**, is slightly more awkward. As a user you have the possibility to query the underlying system to know whether the operation you wish to do will be blocking due to the resource not being available, or not. By constantly **polling** the underlying system, you can wait for the right time to do a synchronous operation without blocking, the resource being available at that time.
 
@@ -113,28 +113,31 @@ The questions that often arise are "Isn't it necessary for the underlying system
 
 I was telling you that these technologies are brand new, I am partly a liar. In the **Unix** & **POSIX** world, a function called [select](https://en.wikipedia.org/wiki/Select_(Unix)) existed even before I was born. Using **select**, one can inspect the status of multiple file descriptors, like some **sockets**. In order to do so, you pass to **select** three different sets of file descriptors: a **read** set, a **write** set, and an **exception** set. The call to **select** will block until one of this set has been updated or after a **timeout** (Note that the timeout is really important here, otherwise we would come back to a simple synchronous solution!). Afterwards, one must iterate on each set to check which file descriptor became ready for a read or write operation (hopefully not blocking) or if any error has been encountered. **Select** is intrinsically a **Reactor** pattern.
 
-**Select** shines for its aivability almost everywhere: on your Linux server, on your windows laptop (yes, windows has a Berkeley Sockets API), on your Android Phone or even your <del>smart-fridge</del>. On the other hand, **select** sets manipulations are not really user friendly. But the main drawbacks of **select** are the maximum number of items in a set, the manual iteration on the sets. On a standard **Linux kernel**, the limit of items is 1024, which is fairly low if you plan to handle 20 000 connections simulteanously. The mandatory iteration on the sets to pin-point the interesting file descriptors has a complexity of **O(n)**, a complexity that could be **O(1)** if the kernel were pruning the unchanged file descriptors directly. As we will see, the teams behind **Windows NT**, **FreeBSD** and **Linux** unsatisfied with **select** authored their own solutions to solve these problems.
+**Select** shines for its avaibility almost everywhere: on your Linux server, on your windows laptop (yes, windows has a Berkeley Sockets API), on your Android Phone or even your <del>smart-fridge</del>. On the other hand, **select** sets manipulations are not really user-friendly. But the main drawbacks of **select** are the maximum number of items in a set, the manual iteration on the sets. On a standard **Linux kernel**, the limit of items is 1024, which is fairly low if you plan to handle 20 000 connections simultaneously. The mandatory iteration on the sets to pin-point the interesting file descriptors has a complexity of **O(n)**, a complexity that could be **O(1)** if the kernel were pruning the unchanged file descriptors directly. As we will see, the teams behind **Windows NT**, **FreeBSD** and **Linux** unsatisfied with **select** authored their own solutions to solve these problems.
 
-- **Poll & epoll**:
+- **Poll, epoll & AIO**:
 
 The [poll](http://man7.org/linux/man-pages/man2/poll.2.html) system call is an "upgraded version" of **select**: it can handle as many file descriptors as desired and more finely. Sadly, **poll** still requires a manual iterations on the file descriptor set and has a clumsy interface. **Poll** is also less portable than **select**.
 
-Starting with the version 2.5.44 of the **Linux kernel** (at the beggining of this century), a new poll API on steroid appeared: namely [epoll](http://man7.org/linux/man-pages/man7/epoll.7.html). It fixes all the major problems of its predecessors with a trade-off of being more convoluted. **Epoll** is using the **Reactor** pattern and also offers the possibility to choose between a **edge-triggered** or **level-triggered** behavior. If you are a **Linux** aficionados in needs of challenges with a low-level API, **epoll** is the way to go in 2016 for building a scalable network solution (and most likely in 2017), I would recommand to use.
+Starting with the version 2.5.44 of the **Linux kernel** (at the beginning of this century), a new poll API on steroid appeared: namely [epoll](http://man7.org/linux/man-pages/man7/epoll.7.html). It fixes all the major problems of its predecessors with a trade-off of being more convoluted. **Epoll** is using the **Reactor** pattern and offers the possibility to choose between a **edge-triggered** or **level-triggered** behavior. If you are a **Linux** guru in needs of challenges with a low-level API, **epoll** is the way to go in 2016 for building a scalable network solution with this kernel (and most likely in 2017).
 
-Not portable out of the Linux world, can only manipulate
+If you are targeting more than the **Linux** world, **epoll** is sadly not portable on any other platform, as far as I know. Even if **epoll** is certainly better than **select** or **poll** on **Linux**, it is also the least flexible solution compared to all its counterparts on other operating systems. **Epoll** is deeply rooted to the Unix philosophy that "everything is a file": it can only handle file descriptors. Some asynchronous operations must be bent to be expressed as file descriptors, like timers ([timerfd](http://man7.org/linux/man-pages/man2/timerfd_create.2.html)), signals ([signalfd](http://man7.org/linux/man-pages/man2/signalfd.2.html)) or custom events ([eventfd](http://man7.org/linux/man-pages/man2/eventfd.2.html)). Ironically, **epoll** was not designed to manage file disk operations. Instead, one must use a completely different POSIX API [AIO](http://man7.org/linux/man-pages/man7/aio.7.html) following a **Proactor** pattern.
 
-- **create event**:
 
 - **Kqueue**:
 
-
-
+If you are running an operating system from the BSD family like FreeBSD, OpenBSD, NetBSD or OSX, your best bet is to try [kqueue](https://en.wikipedia.org/wiki/Kqueue). In the async-API-war (if such a war ever existed), **kqueue** clearly beats **epoll**. While it roughly works in the same way as **epoll** (a Reactor), it is not restricted to file descriptors! I, sadly, never played with this API with such a solid reputation.
 
 - **IOCP**:
 
-- **Specific APIs**:
+I once read on the internets that [IOCP]( https://msdn.microsoft.com/en-us/library/windows/desktop/aa365198.aspx ), standing for **I/O Completion Ports**, is one of the best feature of **Windows NT**'s kernel, and I can only agree on this fact. Unlike all the other solutions, **IOCP** uses a **Proactor** pattern. In **IOCP**, all your operations are tied to an [IoCompletionPort](https://msdn.microsoft.com/en-us/library/windows/desktop/aa363862.aspx), which is fancy name for a smart **event-queue**. All the operations (like ReadFile, or WSASend) must accept an [OVERLAPPED](https://msdn.microsoft.com/en-us/library/windows/desktop/ms684342.aspx) structure as a parameter, which carries all the informations necessary for executing the operation and generating an completion event once done. One can wait for an event using [GetQueuedCompletionStatus](https://msdn.microsoft.com/en-us/library/windows/desktop/aa364986.aspx), or even manually trigger an event using [PostQueuedCompletionStatus](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365198.aspx) which is amazing for asynchronous thread communications.
 
-Reactor more popular as a system implementation. 
+Like **kqueue**, **IOCP** handles all kind of operations which is very convenient, at the price of using Win32 specific functions. By following a **Proactor** pattern, **IOCP** is for some of us easier to wrap our head around. **IOCP** is the base for all the asynchronous technologies on Windows's paltform including the .Net framework and the **async/await** keywords in C#. Finally, for the Microsoft haters, **IOCP** was successful enough to be included into **Solaris 10**!
+
+- **Libraries**:
+
+Now that we have seen 
+In most of our daily-routine, . lib
 
 ###### Event loop:
 
@@ -169,7 +172,7 @@ Both of these patterns permit to express an **event-loop** which is the base for
 
 You will notice that you must start a **first asynchronous operation**, before entering the loop, as a **bootstrap**. Otherwise, the queue **eventsQueue** would be forever empty, and your processus would never change its state.
 
-In a more refined version, it is also possible to associate some [callbacks]( https://en.wikipedia.org/wiki/Callback_(computer_programming) ) function to some **events** or **asynchronous operations**:
+In a more refined version, it is also possible to associate some <a href="https://en.wikipedia.org/wiki/Callback_(computer_programming)"> callbacks </a> functions to some **events** or **asynchronous operations**:
 
 
     :::c++
@@ -210,4 +213,4 @@ Boost.Asio, libuv
 
 #### Conclusion:
 A good introduction for some other posts.
-Running joke
+Running joke test
