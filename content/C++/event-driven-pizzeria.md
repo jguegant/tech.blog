@@ -134,14 +134,19 @@ I once read on the internets that [IOCP]( https://msdn.microsoft.com/en-us/libra
 
 Like **kqueue**, **IOCP** handles all kind of operations which is very convenient, at the price of using Win32 specific functions. By following a **Proactor** pattern, **IOCP** is for some of us easier to wrap our head around. **IOCP** is the base for all the asynchronous technologies on Windows's paltform including the .Net framework and the **async/await** keywords in C#. Finally, for the Microsoft haters, **IOCP** was successful enough to be included into **Solaris 10**!
 
-- **Libraries**:
+- **Third-party libraries**:
 
-Now that we have seen 
-In most of our daily-routine, . lib
+Let's face it, most of us do not want to manipulate OS-specific APIs. Nowadays, almost all the languages have at least one library or framework to write portable event-driven architectures. A quick search on google like "asynchronous _INSET_YOUR_LANGUAGE_" will usually raise fruitful results. In the last part of this post, I will briefly introduce you to both the de-facto libraries for **C++** and **python**.
+
+At a low-level, all of these libraries still rely on the aforementioned APIs. Usually, these libraries encapsulate these low-level features into a nice **event-loop** pattern as we will see right now!
 
 ###### Event loop:
 
-Both of these patterns permit to express an **event-loop** which is the base for an event-driven architecture:
+Now that we have the possibility to construct a **Proactor** pattern for our long operations using low-level APIs, we can wrap its **event-queue** into an **event-loop**.
+
+An **event-loop** is the base for an event-driven architecture. **Event loops** are actually fairly common in **UI programming** and **video-games** where user inputs are injected asynchronously in the application logic. A game or UI loop is generally constructed in the following way: check for user inputs ==> update logic accordingly ==> render ==> restart. Thinking about a game where the main loop would **wait** for user inputs instead of some **checks** gives me chills. If an **event-loop** makes sense in these use-cases, so does it for anything else dealing with other external inputs (networking, file, timers).
+
+In a server, an **event-loop** would look closely to this:
 
     :::c++
     // Pseudo-code for an event-loop:
@@ -155,25 +160,24 @@ Both of these patterns permit to express an **event-loop** which is the base for
             switch (event) {
                 case EVENT_A: // In reaction of the EVENT_A...
                     DoSomeComputation(); // ...I will do some computations...
-                    ...
-                    DoAsynchronousOperationB(); // ...and do another asynchronous operation that will raise an event B.
-                    ...
-                    DoSomeOtherComputation();
+
+                    DoAsynchronousOperationB(); // ...and do another asynchronous operation that will raise an EVENT_B.
+
+                    DoSomeOtherBigComputation(); // .. we can do something not linked to OperationB without waiting.
                 break;
                 case EVENT_B:
                     DoSomeComputation();
+                    
                     DoAsynchronousOperationA();
-                    ...
                 break;
                 ...
             }
         }
     }
 
-You will notice that you must start a **first asynchronous operation**, before entering the loop, as a **bootstrap**. Otherwise, the queue **eventsQueue** would be forever empty, and your processus would never change its state.
+You will notice that you must start a **first asynchronous operation**, before entering the loop, as a **bootstrap**. Otherwise, the queue **eventsQueue** would be forever empty, and your processus would never change its state. Speaking of **state**, you can observe that our logic is now expressed in the shape of a [state machine](https://en.wikipedia.org/wiki/Finite-state_machine), each change of state being the result of an asynchronous operation. Note also that in the state "EVENT_A happened", a big computation could have been done meanwhile an Operation B was processed. One thread and is enough for running this **event-loop** without staling!
 
-In a more refined version, it is also possible to associate some <a href="https://en.wikipedia.org/wiki/Callback_(computer_programming)"> callbacks </a> functions to some **events** or **asynchronous operations**:
-
+In a more refined version, you would express your states as <a href="https://en.wikipedia.org/wiki/Callback_(computer_programming)"> callback </a> functions:
 
     :::c++
     // Pseudo-code for a refined event-loop using callbacks:
@@ -181,13 +185,16 @@ In a more refined version, it is also possible to associate some <a href="https:
     void aCallBackForA() // A callback in reaction of the EVENT_A...
     {
         DoSomeComputation(); // ...I will do some computations...
+        
         DoAsynchronousOperationB(aCallBackForB); // ...and do another asynchronous operation that will aCallBackForB.
-        DoSomeOtherComputation();
+        
+        DoSomeOtherBigComputation(); // .. something not linked to OperationB.
     }
 
     void aCallBackForB() // A callback in reaction of the EVENT_B...
     {
         DoSomeComputation();
+        
         DoAsynchronousOperationA(aCallBackForA);
     }
 
@@ -201,16 +208,21 @@ In a more refined version, it is also possible to associate some <a href="https:
         }
     }
 
-Most of the libraries or framework for event-driven architectures expose such an interface for running the event loop and doing asynchronous operations associated with callbacks. One thread is enough for running the event-loop!
-
-More abstract libraries.
-Boost.Asio, libuv
-
-
+Easy right? Well, most of the libraries or frameworks for **event-driven architectures** expose a such interfaces for running **event-loops**, with some attached **asynchronous operations** and **callbacks**. Now that these internals have no secret anymore for you, we can relax a bit and enjoy a bit of code together.
 
 #### Time for a bit of code:
 
+##### C++ & Asio:
+
+In the **C++** world
+
+##### Python & Twisted:
+
+**Python**
 
 #### Conclusion:
+
+Starting from a running joke, during our lunch time at work, that the personal of the kebab shop close to us are more asynchronous than 
+
 A good introduction for some other posts.
 Running joke test
