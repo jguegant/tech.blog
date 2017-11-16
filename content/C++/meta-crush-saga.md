@@ -6,7 +6,7 @@ Slug: meta-crush-saga
 Status: draft
 
 ### Trivia:
-As a quest to obtain the hihgly coveted title of **Lead Senior C++ Over-Engineer**, I recently decided to rewrite the game I work on during daytime (Candy Crush Saga) using the quintessence of modern C++. And... thus was born [Meta Crush Saga](https://github.com/Jiwan/meta_crush_saga). I was highly inspired by [Matt Bernier's Nibbler game](https://blog.mattbierner.com/stupid-template-tricks-snake/) that used pure template meta-programming to recreate our the famous snake game we could play on our Nokia 3310 back in the days.
+As a quest to obtain the highly coveted title of **Lead Senior C++ Over-Engineer**, I recently decided to rewrite the game I work on during daytime (Candy Crush Saga) using the quintessence of modern C++. And... thus was born [Meta Crush Saga](https://github.com/Jiwan/meta_crush_saga): a **compile-time game**. I was highly inspired by [Matt Bernier's Nibbler game](https://blog.mattbierner.com/stupid-template-tricks-snake/) that used pure template meta-programming to recreate our the famous snake game we could play on our Nokia 3310 back in the days.
 
 **C++17** is offering us new tools ~~to shoot yourself in the foot~~ ease our pain when practicing the dark art of computing at compile-time: constexpr lambdas, if constexpr, std::variant... Implementing a simple game was a nice hobby project to master the features of this new C++ standard.
 
