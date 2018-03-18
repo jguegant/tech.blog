@@ -30,7 +30,7 @@ Here is a menu of most of the talks I attended. The legend is pretty simple:
 I will not spoil all the talks, but simply try to give an overview of what you can expect within them. Note that all the talks are generally of high quality and my appreciation very subjective. I have seen people with very different "favorite talk".
 
 ### [Keynote] Better Code: Human interface - By Sean Parent - 💀 ★★
-Slides: [coming-soon](https://github.com/sean-parent/sean-parent.github.io/blob/master/presentations/2017-11-09-human-interface/2017-11-09-human-interface.pdf)
+Slides: [link](https://github.com/sean-parent/sean-parent.github.io/blob/master/presentations/2017-11-09-human-interface/2017-11-09-human-interface.pdf)
 Video: [coming-soon]()
 
 Sean Parent is a **Principal Scientist at Adobe Systems** and has been working on the famous software **Photoshop** for more than 15 years. Sean Parent is a regular and prominent speaker at C++ conferences, one of his recently famous talk being [Better Code: Runtime Polyphormism](https://www.youtube.com/watch?v=QGcVXgEVMJg) from the same series of talks (Better Code) as the one he gave during **Meeting C++**.
@@ -54,7 +54,7 @@ Overall a very nice talk, but on a very abstract topic, since not much has been 
 ### [Talk] Threads and Locks must Go - Rainer Grimm - 💀💀 ★
 
 Slides: [coming-soon]()
-Video: [coming-soon]()
+Video: [link](https://www.youtube.com/watch?v=fkqVRzy4JhA)
 
 In this talk **Rainer Grimm**, a German author of multiple [C++ books](https://www.goodreads.com/author/show/7496329.Rainer_Grimm), brought under the spotlight the concurrency features introduced by the new C++ standard **C++17** and the coming one **C++20**. Here is a short summary of my favourite features:
 
@@ -107,8 +107,8 @@ As explained by **Rainer Grimm**, we will have the possibility to easily bring c
 
 ### [Talk] Strong types for strong interfaces - Johnathan Boccora -  💀 ★★★
 
-Slides: [coming-soon]()
-Video: [coming-soon]()
+Related blog post: [link](https://www.fluentcpp.com/2016/12/08/strong-types-for-strong-interfaces/)
+Video: [link](https://www.youtube.com/watch?v=WVleZqzTw2k&t=1536s)
 
 A **must watch**! Even when facing some technical issues,  **Johnathan** is very good speaker and I was quickly captivated by the topic of **strong types**. Jonathan is also a talented writter with his famous blog [fluentcpp](https://www.fluentcpp.com/) (I would really suggest to have a look at it once in a while).
 
@@ -136,8 +136,8 @@ This concept is not new and is already used in [std::chrono](http://en.cpprefere
 
 ### [Talk] How C++ Debuggers Work - Simon Brand (4/5) - 💀💀 ★★
 
-Slides: [coming-soon]()
-Video: [coming-soon]()
+Related blog post: [link](https://blog.tartanllama.xyz/writing-a-linux-debugger-setup/)
+Video: [link](https://www.youtube.com/watch?v=Q3Rm95Mk03c)
 
 **Simon Brand**, also known as [TartanLlama](https://blog.tartanllama.xyz/) (a really fancy fictious name for a Scott), presented us how a mixture of calls to [ptrace](http://man7.org/linux/man-pages/man2/ptrace.2.html), injection of the [int3 opcode](https://en.wikipedia.org/wiki/INT_(x86_instruction)), parsing of the [DWARF format](https://en.wikipedia.org/wiki/DWARF) and perseverance is the base to create a debugger on a **x86**(_64) architecture with a **Unix** platform (or **Linux** platform only if you OS specific calls like [process_vm_readv, process_vm_writev](http://man7.org/linux/man-pages/man2/process_vm_readv.2.html)).
 
@@ -147,7 +147,7 @@ If one day I have to tackle the creation of a debugger on Unix, I would certaine
 
 ### [Talk] The Three Little Dots and the Big Bad Lambdas - Joel Falcou - 💀💀💀 ★★★
 Slides: [coming-soon]()
-Video: [coming-soon]()
+Video: [link](https://www.youtube.com/watch?v=WU5v4FT7CMM)
 
 I am always excited by watching a talk from [Joel Falcou](https://twitter.com/joel_f?lang=en): he is a venerable (template) metra-programmer wizzard with a very didactic approach to explain things (and also we share the same nationality). Once again, I was not disapointed by his session.
 
@@ -190,14 +190,14 @@ This example is fairly trivial and there would be a high chance that you would r
 ### [Keynote] Its complicated! - Kate Gregory - 💀 ★★★
 
 Slides: [coming-soon]()
-Video: [coming-soon]()
+Video: [link](https://www.youtube.com/watch?v=tTexD26jIN4)
 
 While excellent, [Kate](http://www.gregcons.com/kateblog/)'s keynote would be very hard to summarise correctly within few paragraphs. It makes you reflect on the difficulties to introduce **C++** to newcomers. You would hope that there is a subset of the language that could be easily assimilate by anyone, **Kate** argues that the reality is sadly more **complicated** than that. Just have a look at how long are the [C++ core guidelines](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#fcall-parameter-passing) on passing parameters to function calls. One day or another, a begginer must learn on how to pass parameters with good semantics and in an optimised fashion, good luck to her/him! On the other hand, it does not mean that the language could have been designed in a simpler way. What we should strive for instead might be better naming of these concepts: the acronym [RAII (Resource Acquisition Is Initialization)](http://en.cppreference.com/w/cpp/language/raii) is obviously not as straightforward as [COW (Copy-on-write)](https://en.wikipedia.org/wiki/Copy-on-write). Whether you are a "newbie" or the best "lead over-engineer" of your company, this talk is really worth a look!
 
 ### [Talk] There Is A New Future - Felix Petriconi - 💀💀 ★★
 
 Slides: [coming-soon]()
-Video: [coming-soon]()
+Video: [link](https://www.youtube.com/watch?v=vDmQlIeY4z0)
 
 [Felix Petriconi](https://petriconi.net/?author=1) and **Sean Parent** have been working on a the [stlab](http://stlab.cc/libraries/concurrency/) library for quite some time. **stlab** takes the best of the various **future** implementations [std::future (C++11)](http://en.cppreference.com/w/cpp/thread/future), [std::future (C++14)](http://en.cppreference.com/w/cpp/thread/future) or [boost::future](http://www.boost.org/doc/libs/1_65_0/doc/html/thread/synchronization.html#thread.synchronization.futures), and adds a bit of it owns features on top of it. For instance, **stlabs** supports passing explicit executors to control where [async](http://stlab.cc/libraries/concurrency/future/async.html) will execute the tasks, and to [then](http://stlab.cc/libraries/concurrency/future/future/then.html) for the control of the continuation task. **Executors** are akin to **event-loops** (or message-pumps in the .Net world) that will process the tasks.
 
@@ -223,10 +223,10 @@ sender(42); // Sent 42 through the channel.
 ```
 I really like some of the features in **stlabs**, hopefully this could be incorporated into the **C++** standard (the executors are down in the pipe of the standardisation process).
 
-### [Talk] Introduction to proposed std::expected<T, E> - Niall Douglas- 💀💀💀 ★
+### [Talk] Introduction to proposed std::expected<T, E> - Niall Douglas - 💀💀💀 ★
 
 Slides: [coming-soon]()
-Video: [coming-soon]()
+Video: [link](https://www.youtube.com/watch?v=JfMBLx7qE0I)
 
 Are you the kind of person that would rather have errors on the return values rather than using **exceptions**. [Niall](https://twitter.com/ned14?lang=en) has a solution for you: [std::expected<T, E>](https://github.com/viboes/std-make/blob/master/doc/proposal/expected/p0323r3.pdf). You can see **std::expected<T, E>** either as a [std::optional\<T\>](http://en.cppreference.com/w/cpp/utility/optional) with a empty state containing an error for being empty, or as a [std::variant<T, E>](http://en.cppreference.com/w/cpp/utility/variant) where you agree that the first alternative is the return value and the second alternative is the potential error. Example:
 
