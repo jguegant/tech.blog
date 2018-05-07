@@ -7,7 +7,7 @@ Slug: meta-crush-saga
 ## Trivia:
 As a quest to obtain the highly coveted title of **Lead Senior C++ Over-Engineer**, I decided last year to rewrite the game I work on during daytime (Candy Crush Saga) using the quintessence of modern C++ (C++17). And... thus was born [Meta Crush Saga](https://github.com/Jiwan/meta_crush_saga): a **compile-time game**. I was highly inspired by [Matt Bernier's Nibbler game](https://blog.mattbierner.com/stupid-template-tricks-snake/) that used pure template meta-programming to recreate our the famous snake game we could play on our Nokia 3310 back in the days.
 
-"What the <s>hell</s> heck is a **compile-time game**?", "What **C++17** features did you use in this project?", "What was your learnings?" might come to your mind. To answer these questions you can either read the rest of this post or accept your inner laziness and watch this talk I made during a Meetup in Stockholm:
+"What the <s>hell</s> heck is a **compile-time game**?", "How does it looks like?", "What **C++17** features did you use in this project?", "What was your learnings?" might come to your mind. To answer these questions you can either read the rest of this post or accept your inner laziness and watch the video version of this post, a talk I made during a Meetup event in Stockholm:
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/XV1lXtB3sqg" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
@@ -34,11 +34,84 @@ As you may understand now, a **compile-time** game is made of a **game-loop** wh
 I let you contemplate this magnificient diagram for as much time as it takes you to understand what I just wrote above:
 ![Life cycle of a compile-time game]({filename}/images/life-cycle-compile-time-game.png)
 
-Before we move on the implementation details of such a loop, I am sure that you have one question you would like to throw at me...
+Before we move on the implementation details of such a loop, I am sure that you have one question you would like to shoot at me...
 
-### Why would you even do that?
+### "Why would you even do that?"
 <img width=25% height=25% src="{filename}/images/why-would-you-even-do-that.png"/>
 
-Well, it's pretty easy:
+Do you really think I would let you break my C++ meta-programming idyll with such a fundamental question? Never!
 
-- <s> Safer than Rust</s>
+- First and foremost, a **compile-time game** will have amazing runtime performances since most of the computations are done during the **compilation phase**. Runtime performance is a key to the success of your AAA game in ASCII art! 
+- You lessen the probability that a wild crustacean appears in your github repository and ask you to rewrite your game in **Rust**. His well-prepared speech on security will fall appart as soon as you explain that a dangling pointer cannot exist at compile-time. Smug **Haskell** programmers might even approve the **type-safety** of your code.
+- You will gain respect from the **Javascript** hipster kingdom, where any over-complicated framework with a strong NIH syndrom can reign as long as it has a catchy name.
+- One of my friend used to say that any line of code from a Perl program provides you de-facto a very strong password. I surely bet that he never tried generating credentials from **compile-time C++**.
+
+So what? Aren't you satisfied with my answers? Maybe your question should have been: "Why could you even do that?".
+
+As a matter of fact, I really wanted to play with the features introduced by C++17. Quite a few of them focus on improving the expressiveness of the language as well as the meta-programming facilities (mainly constexpr). Instead of writing small code samples, I thought that it would be more fun to turn all of this into a game. Pet projects are a nice way to learn concepts that you may not use before quite some time at work. Being able to run the core logic of your game at compile-time proves once a again that templates and constepxr are [turing complete](https://en.wikipedia.org/wiki/Turing_completeness) subsets of the C++ language.
+
+
+## Meta Crush Saga: an overview
+
+### A Match-3 game:
+
+**Meta Crush Saga** is a [tiled-matching game](https://en.wikipedia.org/wiki/Tile-matching_video_game) similar to **Bejeweled** or **Candy Crush Saga**. The core of the rules consists in matching three or more tiles of the same pattern to increase your scores. Here is sneak peek of a **game state** I "dumped" (dumping ASCII is pretty damn easy): 
+
+    :::c++
+    R"(
+        Meta crush saga      
+    ------------------------  
+    |                        | 
+    | R  B  G  B  B  Y  G  R | 
+    |                        | 
+    |                        | 
+    | Y  Y  G  R  B  G  B  R | 
+    |                        | 
+    |                        | 
+    | R  B  Y  R  G  R  Y  G | 
+    |                        | 
+    |                        | 
+    | R  Y  B  Y (R) Y  G  Y | 
+    |                        | 
+    |                        | 
+    | B  G  Y  R  Y  G  G  R | 
+    |                        | 
+    |                        | 
+    | R  Y  B  G  Y  B  B  G | 
+    |                        | 
+    ------------------------  
+    > score: 9009
+    > moves: 27
+    )"
+
+The game-play of this Match-3 is not so interesting in itself, but what about the architecture running all of this? To understand it, I will try to explain each part of the life cycle of this **compile-time** game in term of code.
+
+### Injecting the game state:
+<img width=70% height=70% src="{filename}/images/injecting-game-state.png"/>
+
+As a C++ afficionados or a nitpicker, you may have noticed that my previous dumped game state started with the following pattern: **R"(**. This is indeed a [C++11 raw string literal](http://en.cppreference.com/w/cpp/language/string_literal), meaning that I do not have to escape special characters like **line feed**. This raw string literal is stored in a file called "current_state.txt".
+
+How do we inject this current game state into a compile state? Let's include it into the loop inputs!
+
+    :::c++
+    // loop_inputs.hpp
+
+    constexpr KeyboardInput keyboard_input = KeyboardInput::KEYBOARD_INPUT;
+
+    constexpr auto get_game_state_string = []() constexpr
+    {
+        auto game_state_string = constexpr_string(
+                #include "current_state.txt"
+        );
+        return game_state_string;
+    };
+
+
+
+### Compile time computation of the new state:
+<img width=40% height=40% src="{filename}/images/compile-time-computation-new-state.png"/>
+
+
+## My C++17 learnings
+
+## Meta Crush Saga II: looking for a pure compile-time experience
