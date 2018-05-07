@@ -7,7 +7,7 @@ Slug: meta-crush-saga
 ## Trivia:
 As a quest to obtain the highly coveted title of **Lead Senior C++ Over-Engineer**, I decided last year to rewrite the game I work on during daytime (Candy Crush Saga) using the quintessence of modern C++ (C++17). And... thus was born [Meta Crush Saga](https://github.com/Jiwan/meta_crush_saga): a **compile-time game**. I was highly inspired by [Matt Bernier's Nibbler game](https://blog.mattbierner.com/stupid-template-tricks-snake/) that used pure template meta-programming to recreate our the famous snake game we could play on our Nokia 3310 back in the days.
 
-"What the <s>hell</s> heck is a **compile-time game**?", "How does it looks like?", "What **C++17** features did you use in this project?", "What was your learnings?" might come to your mind. To answer these questions you can either read the rest of this post or accept your inner laziness and watch the video version of this post, a talk I made during a Meetup event in Stockholm:
+"What the <s>hell</s> heck is a **compile-time game**?", "How does it looks like?", "What **C++17** features did you use in this project?", "What was your learnings?" might come to your mind. To answer these questions you can either read the rest of this post or accept your inner laziness and watch the video version of this post, which is a talk I made during a [Meetup event](https://www.meetup.com/swedencpp/events/246069743/) in Stockholm:
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/XV1lXtB3sqg" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
@@ -87,31 +87,87 @@ As a matter of fact, I really wanted to play with the features introduced by C++
 The game-play of this Match-3 is not so interesting in itself, but what about the architecture running all of this? To understand it, I will try to explain each part of the life cycle of this **compile-time** game in term of code.
 
 ### Injecting the game state:
-<img width=70% height=70% src="{filename}/images/injecting-game-state.png"/>
+<img width=50% height=50% src="{filename}/images/injecting-game-state.png"/>
 
-As a C++ afficionados or a nitpicker, you may have noticed that my previous dumped game state started with the following pattern: **R"(**. This is indeed a [C++11 raw string literal](http://en.cppreference.com/w/cpp/language/string_literal), meaning that I do not have to escape special characters like **line feed**. This raw string literal is stored in a file called "current_state.txt".
+As a C++ afficionados or a nitpicker, you may have noticed that my previous dumped game state started with the following pattern: **R"(**. This is indeed a [C++11 raw string literal](http://en.cppreference.com/w/cpp/language/string_literal), meaning that I do not have to escape special characters like **line feed**. This raw string literal is stored in a file called [current_state.txt](https://github.com/Jiwan/meta_crush_saga/blob/master/current_state.txt).
 
 How do we inject this current game state into a compile state? Let's include it into the loop inputs!
 
     :::c++
     // loop_inputs.hpp
 
-    constexpr KeyboardInput keyboard_input = KeyboardInput::KEYBOARD_INPUT;
+    constexpr KeyboardInput keyboard_input = KeyboardInput::KEYBOARD_INPUT; // Get the current keyboard input as a macro
 
     constexpr auto get_game_state_string = []() constexpr
     {
         auto game_state_string = constexpr_string(
-                #include "current_state.txt"
+            // Include the raw string literal into a variable
+            #include "current_state.txt"
         );
         return game_state_string;
     };
 
+Whether it is a *.txt* file or a *.h* file, the **include** directive from C preprocessor will work exactly the same: it will copy the content of the file at its location. Here I am copying the ascii-game-state-raw-string-literal into a variable named **game_state_string**. 
+
+Note that this header file [loop_inputs.hpp](https://github.com/Jiwan/meta_crush_saga/blob/master/loop_inputs.hpp) also exposes the keyboard inputs for the current frame / compilation. Unlike the game state, the keyboard state is fairly small and can be easily received as a preprocessor definition.
 
 
 ### Compile time computation of the new state:
-<img width=40% height=40% src="{filename}/images/compile-time-computation-new-state.png"/>
+<img width=50% height=50% src="{filename}/images/compile-time-computation-new-state.png"/>
+
+Now that we have gathered enough data, we can compute a new state. And finally, we reach the point where we have to write a [main.cpp file](https://github.com/Jiwan/meta_crush_saga/blob/master/main.cpp):
+
+    :::c++
+    // main.cpp
+    #include "loop_inputs.hpp" // Get all the data necessary for our computation.
+
+    // Start: compile-time computation.
+
+    constexpr auto current_state = parse_game_state(get_game_state_string); // Parse the game state into a convenient object.
+    
+    constexpr auto new_state = game_engine(current_state) // Feed the engine with the parsed state,
+        .update(keyboard_input);                          // Update the engine to obtain a new state.
 
 
-## My C++17 learnings
+    constexpr auto array = print_game_state(new_state); // Convert the new state into a std::array<char> representation.
+    
+    // End: compile-time computation.
+
+    // Runtime: just render the state.
+    for (const char& c : array) {  std::cout << c; }
+
+Strangely, this C++ code does not look too convoluted for what it does. Most of this code is run during the compilation phase and yet follows traditional OOP and procedural paradigms. Only the rendering, the last line, is an impediment to a pure compile-time computation. By sprinkling a bit of **constexpr** where it should, you can have pretty elegant meta-programming in C++17 as we will see later-on. I find it fascinating the freedom C++ gives us when it comes to mix runtime and compile-time execution.
+
+
+You will also notice that this code only execute one frame, there is no **game-loop** in here. Let's solve that issue!
+
+### Gluing things together:
+<img width=50% height=50% src="{filename}/images/gluing-things-together.png"/>
+
+If you are revulsed by my **C++** tricks, I wish you do not mind to contemplate my **bash** skills. Indeed, my **game loop** is nothing more than a [bash script](https://github.com/Jiwan/meta_crush_saga/blob/master/meta_crush_saga.sh) executing repeatidly some compilation.
+
+    :::bash
+    # It is a loop! No wait, it is a game loop!!!
+    while; do :
+        # Start a compilation step using G++
+        g++ -o renderer main.cpp -DKEYBOARD_INPUT="$keypressed" & keypressed=get_key_pressed() 
+        
+        # Clean the screen.
+        clear
+
+        # Obtain the rendering and show to the player.
+        current_state=$(./renderer)
+        echo $current_state # Show to the player
+
+        # Place it into the
+        echo "R\"(" > current_state.txt
+        echo $current_state >> current_state.txt
+        echo ")\"" >> current_state.txt
+    done
+
+### A bit of gameplay to soften your eyes:
+![Meta Crush Saga in action]({filename}/images/meta-crush-saga.gif)
+
+## My C++17 learnings:
 
 ## Meta Crush Saga II: looking for a pure compile-time experience
