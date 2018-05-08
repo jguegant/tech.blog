@@ -144,29 +144,42 @@ You will also notice that this code only execute one frame, there is no **game-l
 ### Gluing things together:
 <img width=50% height=50% src="{filename}/images/gluing-things-together.png"/>
 
-If you are revulsed by my **C++** tricks, I wish you do not mind to contemplate my **bash** skills. Indeed, my **game loop** is nothing more than a [bash script](https://github.com/Jiwan/meta_crush_saga/blob/master/meta_crush_saga.sh) executing repeatidly some compilation.
+If you are revulsed by my **C++** tricks, I wish you do not mind to contemplate my **Bash** skills. Indeed, my **game loop** is nothing more than a [bash script](https://github.com/Jiwan/meta_crush_saga/blob/master/meta_crush_saga.sh) executing repeatidly some compilations.
 
     :::bash
     # It is a loop! No wait, it is a game loop!!!
     while; do :
         # Start a compilation step using G++
-        g++ -o renderer main.cpp -DKEYBOARD_INPUT="$keypressed" & keypressed=get_key_pressed() 
+        g++ -o renderer main.cpp -DKEYBOARD_INPUT="$keypressed" 
+        
+        keypressed=get_key_pressed() 
         
         # Clean the screen.
         clear
 
-        # Obtain the rendering and show to the player.
+        # Obtain the rendering
         current_state=$(./renderer)
-        echo $current_state # Show to the player
+        echo $current_state # Show the rendering to the player
 
-        # Place it into the
+        # Place the rendering into a current_state.txt file and wrap it into a raw string literal.
         echo "R\"(" > current_state.txt
         echo $current_state >> current_state.txt
         echo ")\"" >> current_state.txt
     done
 
+I actually struggled a bit to get the keyboard inputs from the console. I initially wanted to receive the inputs in parallel of the compilation. After lots trial and error, I got something working-ish using the `read` **Bash** command. I would never dare to duel a **Bash** wizard, that language is way too maleficent!
+
+Now let's agree, I had to resort to use another language to handle my game loop. Although, technically, nothing would prevent me to write that part of the code in C++. It also does not cancel the fact that 90% of the logic of my game is done within this **g++** compilation command, which is pretty awesome!
+
 ### A bit of gameplay to soften your eyes:
+Now that you have suffered your way into my explanations on the game's architecture, here comes a bit of eye candy:
+
 ![Meta Crush Saga in action]({filename}/images/meta-crush-saga.gif)
+
+This pixelated gif is a record of me playing **Meta Crush Saga**. As you can see, the game runs smoothly enough to make it playable in real-time. It is clearly not attractive enough to be able to stream it on Twitch and become the new Pewdiepie, but hey... it works!
+One of the funny aspect of having a **game state** stored as a *.txt* is the ability to cheat or test edge-cases really easily.
+
+Now that I sketched the architecture, we will dive a bit more in the C++17 features used within that project. I will not focus on the game logic, as it is very specific to a Match-3, but will instead discuss subjects of C++ that could applied in other projects too.
 
 ## My C++17 learnings:
 
