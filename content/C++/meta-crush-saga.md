@@ -179,8 +179,38 @@ Now that you have suffered your way into my explanations on the game's architect
 This pixelated gif is a record of me playing **Meta Crush Saga**. As you can see, the game runs smoothly enough to make it playable in real-time. It is clearly not attractive enough to be able to stream it on Twitch and become the new Pewdiepie, but hey... it works!
 One of the funny aspect of having a **game state** stored as a *.txt* is the ability to cheat or test edge-cases really easily.
 
-Now that I sketched the architecture, we will dive a bit more in the C++17 features used within that project. I will not focus on the game logic, as it is very specific to a Match-3, but will instead discuss subjects of C++ that could applied in other projects too.
+Now that I sketched the architecture, we will dive a bit more in the C++17 features used within that project. I will not focus on the game logic, as it is very specific to a Match-3, but will instead discuss subjects of C++ that be could applied in other projects too.
 
 ## My C++17 learnings:
+
+<img width=25% height=25% style="float: left;" src="{filename}/images/spoiled-kids.png"/>
+
+Unlike C++14 which mainly contained minor fixes, the new C++17 standard has a lot to offer. There were hopes that some long-overdue features would land this time (modules, coroutines, concepts...) and... well... they did not ; which disappointed quite a few of us. But after the mourning, we discovered a myriad of small unexpected gems that made their way through.
+
+I would dare to say that all the meta-programming kids were spoiled this year! Few minor tweaks and additions in language now permit you to write code very similar weither it is running during compilation or afterwards during runtime.
+
+<div style="clear: both;"></div>
+
+### Constepxr all the things:
+
+C++17 continued to improve value-computations at compile-time using the almighty [constexpr](http://en.cppreference.com/w/cpp/language/constexpr) keyword.
+
+#### Constexpr branching:
+
+#### Containers:
+
+##### constexpr_string and constexpr_string_view:
+
+
+#### Free food from the STL:
+
+
+
+#### Constexpr parameters:
+
+#### How to Kill Compile-Time Bugs?
+
+### Performance:
+
 
 ## Meta Crush Saga II: looking for a pure compile-time experience
