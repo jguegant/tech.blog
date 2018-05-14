@@ -250,14 +250,14 @@ In your most euphoric dreams you may be able to rewrite that awkward **SFINAE tr
         }
     }
 
-Sadly, as soon as you wake-up and start writing C++ while eating a bowl of your favorite cereals, your compiler will vomit you a displeasant message regarding the call `serialize(42);`. It will explain that the object `obj` of type `int` does not have a `serialize()` member function. As much as you hate it, your compiler is right! Given the current code, it will try to compile both of the branches `return obj.serialize();` and 
-`return std::to_string(obj);`. For an `int`, the branch `return obj.serialize();` might well be some dead-code since `has_serialize(ob)` will always return `false`, but your compiler will still compile it. Now here come **C++17** to save us from such an embarassing situation, you can use **constexpr** after an if statement to have a real compile-time branching:
+Sadly, as soon as you wake-up and start writing **C++14** while eating a bowl of your favorite cereals, your compiler will vomit you a displeasant message regarding the call `serialize(42);`. It will explain that the object `obj` of type `int` does not have a `serialize()` member function. As much as you hate it, your compiler is right! Given the current code, it will try to compile both of the branches `return obj.serialize();` and 
+`return std::to_string(obj);`. For an `int`, the branch `return obj.serialize();` might well be some dead-code since `has_serialize(ob)` will always return `false`, but your compiler will still compile it. As you may expect, **C++17** save us from such an embarassing situation by introducing the possibility to add **constexpr** after an if statement to "force" a compile-time branching:
 
     :::c++
     template <class T>
-    std::string serialize(const T& obj) {
-        if constexpr (has_serialize(obj)) {
-            return obj.serialize(); // This branch will be discarded and not compiled.
+    std::string serialize(const T& obj) // constexpr on the function was useless
+        if constexpr (has_serialize(obj)) { // But now we can place on the if directly
+            return obj.serialize(); // This branch will be discarded and therefore not compiled.
         } else {
             return std::to_string(obj);
         }
