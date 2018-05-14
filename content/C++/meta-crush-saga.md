@@ -193,9 +193,76 @@ I would dare to say that all the meta-programming kids were spoiled this year! F
 
 ### Constepxr all the things:
 
-C++17 continued to improve value-computations at compile-time using the almighty [constexpr](http://en.cppreference.com/w/cpp/language/constexpr) keyword.
+As Ben Deane and Jason Turner foretold in their [C++14 talk](https://www.youtube.com/watch?v=PJwd4JLYJJY), 
+C++ is quickly improving value-computations at compile-time using the almighty [constexpr](http://en.cppreference.com/w/cpp/language/constexpr) keyword. By placing this keyword in the appropriate places you can hint to your compiler that an expression is constant and could be directly evaluated at compile time. In **C++11** you could already write such code:
 
-#### Constexpr branching:
+	:::c++
+	constexpr int factorial(int n) // Combining a function with constexpr make it potentially evaluable at compile-time.
+	{
+    	return n <= 1? 1 : (n * factorial(n - 1));
+	}
+
+	int i = factorial(5); // Call to a constexpr function.
+	// Can be replace by a good compiler by:
+	// int i = 120;
+
+While powerful, **constexpr** had quite a lot of restrictions on its usage and made it cumbersome to write expressive code in this way.
+**C++14** relaxed a lot **constexpr** and felt much more natural to use. Our previous factorial function could be rewritten this way:
+	
+    :::c++
+	constexpr int factorial(int n)
+	{
+        if (n <= 1) {
+            return 1;
+        }
+
+        return n * factorial(n - 1);
+	}
+
+Indeed, **C++14** lifted the rule stipulating that a **constexpr function** must only consist of one return statement, which forced us to use the [ternary operator](https://en.wikipedia.org/wiki/%3F:) as a basic building block. Now **C++17** brought even more placements for the **constexpr** keyword that we can explore!
+
+#### Compile-time branching:
+
+Did you ever end-up in a situation where you wish that you could have different behavior according to the template parameter you are manipulating? Let's say that you wanted a generic `serialize` function that would call `.serialize()` if your object provides one, otherwise fall back on calling `to_string` on it. As explained in more details in this [post about SFINAE]({filename}../C++/sfinae-introduction.md) you would very likely write such a lovely alien code:
+
+    :::c++
+    template <class T>
+    std::enable_if_t<has_serialize_v<T>, std::string> 
+    serialize(const T& obj) {
+        return obj.serialize();
+    }
+
+    template <class T>
+    std::enable_if_t<!has_serialize_v<T>, std::string> 
+    serialize(const T& obj) {
+        return std::to_string(obj);
+    }
+
+In your most euphoric dreams you may be able to rewrite that awkward **SFINAE trick** into such a magestic piece of code in **C++14**:
+
+    :::c++
+    template <class T>
+    constexpr std::string serialize(const T& obj) { // We know that constexpr can be placed before functions.
+        if (has_serialize(ob)) { // has_serialize is also a constexpr function that test the of serialize on a object.
+            return obj.serialize();
+        } else {
+            return std::to_string(obj);
+        }
+    }
+
+Sadly, as soon as you wake-up and start writing C++ while eating a bowl of your favorite cereals, your compiler will vomit you a displeasant message regarding the call `serialize(42);`. It will explain that the object `obj` of type `int` does not have a `serialize()` member function. As much as you hate it, your compiler is right! Given the current code, it will try to compile both of the branches `return obj.serialize();` and 
+`return std::to_string(obj);`. For an `int`, the branch `return obj.serialize();` might well be some dead-code since `has_serialize(ob)` will always return `false`, but your compiler will still compile it. Now here come **C++17** to save us from such an embarassing situation, you can use **constexpr** after an if statement to have a real compile-time branching:
+
+    :::c++
+    template <class T>
+    std::string serialize(const T& obj) {
+        if constexpr (has_serialize(obj)) {
+            return obj.serialize(); // This branch will be discarded and not compiled.
+        } else {
+            return std::to_string(obj);
+        }
+    }
+
 
 #### Containers:
 
