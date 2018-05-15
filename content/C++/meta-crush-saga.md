@@ -302,14 +302,35 @@ Well, I wanted to pass this variable and its content deep down to some functions
 
     constexpr auto parse_board(const char* game_state_string)
     {
-        std::array<ItemType, parse_board_size(game_state_string)> board{};
+        std::array<GemType, parse_board_size(game_state_string)> board{};
         //                                       ^ ‘game_state_string’ is not a constant expression
         // ...  
     }
 
-    parse_boad(“...something...”);
+    parse_board(“...something...”);
 
-If you feed **parse_board** 
+If you are doing it this way, your grumpy compiler will complain that the parameter **game_state_string** is not a constant expression. When I am building my array of Gems, I need to compute its fixed capacity directly (you cannot use vectors at compile-time as it requires to allocate) and pass it as a value-template-argument to **std::array**. The expression **parse_board_size(game_state_string)** therefore needs to be a constant expression. While **parse_board_size** is clearly marked as **constexpr**, but **game_state_string** is not AND cannot be! Two rules are annoying us in this case:
+
+- Arguments of a constexpr function are not constexpr!
+- And you cannot add constexpr in front of them!
+
+It boils down to the fact that **constexpr functions** MUST be usable for both runtime or compile-time computations. Allowing **constexpr parameters** would discard the possibility to use them at runtime.
+
+Thanksfully, there is a way to mitigate that issue. Instead of accepting the value as a normal function parameter, you can encapsulate that value into a type:
+
+    :::c++
+    template <class GameString>
+    constexpr auto parse_board(GameString&&) {
+        std::array<CellType, parse_board_size(GameString::value())> board{};
+        // ...
+    }
+
+    struct GameString {
+        static constexpr auto value() { return "...something..."; }
+    };
+
+    parse_board(GameString{});
+
 
 *** **game_state_string**  
 
