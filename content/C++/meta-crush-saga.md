@@ -194,7 +194,7 @@ I would dare to say that all the meta-programming kids were spoiled this year! F
 ### Constepxr all the things:
 
 As Ben Deane and Jason Turner foretold in their [C++14 talk](https://www.youtube.com/watch?v=PJwd4JLYJJY), 
-C++ is quickly improving value-computations at compile-time using the almighty [constexpr](http://en.cppreference.com/w/cpp/language/constexpr) keyword. By placing this keyword in the appropriate places you can hint to your compiler that an expression is constant and could be directly evaluated at compile time. In **C++11** you could already write such code:
+C++ is quickly improving value-computations at compile-time using the almighty [constexpr](http://en.cppreference.com/w/cpp/language/constexpr) keyword. By placing this keyword in the appropriate places you can hint to your compiler that an expression is constant and **could** be directly evaluated at compile-time. In **C++11** you could already write such code:
 
 	:::c++
 	constexpr int factorial(int n) // Combining a function with constexpr make it potentially evaluable at compile-time.
@@ -238,31 +238,80 @@ Did you ever end-up in a situation where you wish that you could have different 
         return std::to_string(obj);
     }
 
-In your most euphoric dreams you may be able to rewrite that awkward **SFINAE trick** into such a magestic piece of code in **C++14**:
+In your dreams you may be able to rewrite that awkward **SFINAE trick** into such a magestic piece of code in **C++14**:
 
     :::c++
+    // has_serialize is a constexpr function that test the of serialize on a object.
+    // See my post on SFINAE to understand how to write such a function. 
     template <class T>
-    constexpr std::string serialize(const T& obj) { // We know that constexpr can be placed before functions.
-        if (has_serialize(ob)) { // has_serialize is also a constexpr function that test the of serialize on a object.
+    constexpr bool has_serialize(const T& /*t*/); 
+
+    template <class T>
+    std::string serialize(const T& obj) { // We know that constexpr can be placed before functions.
+        if (has_serialize(obj)) {
             return obj.serialize();
         } else {
             return std::to_string(obj);
         }
     }
 
-Sadly, as soon as you wake-up and start writing **C++14** while eating a bowl of your favorite cereals, your compiler will vomit you a displeasant message regarding the call `serialize(42);`. It will explain that the object `obj` of type `int` does not have a `serialize()` member function. As much as you hate it, your compiler is right! Given the current code, it will try to compile both of the branches `return obj.serialize();` and 
-`return std::to_string(obj);`. For an `int`, the branch `return obj.serialize();` might well be some dead-code since `has_serialize(ob)` will always return `false`, but your compiler will still compile it. As you may expect, **C++17** save us from such an embarassing situation by introducing the possibility to add **constexpr** after an if statement to "force" a compile-time branching:
+Sadly, as soon as you wake-up and start writing **C++14** for real, your compiler will vomit you a displeasant message regarding the call `serialize(42);`. It will explain that the object `obj` of type `int` does not have a `serialize()` member function. As much as you hate it, your compiler is right! Given the current code, it will always try to compile both of the branches `return obj.serialize();` and 
+`return std::to_string(obj);`. For an `int`, the branch `return obj.serialize();` might well be some dead-code since `has_serialize(obj)` will always return `false`, but your compiler will still need to compile-it.
+
+As you may expect, **C++17** save us from such an embarassing situation by introducing the possibility to add **constexpr** after an if statement to "force" a compile-time branching and discard the unused statements:
 
     :::c++
+    // has_serialize...
+    // ...
+
     template <class T>
-    std::string serialize(const T& obj) // constexpr on the function was useless
-        if constexpr (has_serialize(obj)) { // But now we can place on the if directly
-            return obj.serialize(); // This branch will be discarded and therefore not compiled.
+    std::string serialize(const T& obj)
+        if constexpr (has_serialize(obj)) { // Now we can place constexpr on the 'if' directly.
+            return obj.serialize(); // This branch will be discarded and therefore not compiled if obj is an int.
         } else {
-            return std::to_string(obj);
+            return std::to_string(obj);branch
         }
     }
 
+<img width=25% height=25% src="{filename}/images/constexpr-all-the-things.png"/>
+
+This is clearly a huge improvement compared to the **SFINAE trick** we had to employ until now. After that, you will start to get the same addiction as Ben and Jason which consists in constexpr everything, everywhere at anytime. Alas, there is still one place where the **constexpr** would well fit in but cannot be done yet: constexpr parameters.
+
+#### Constexpr parameters:
+
+If you are assiduous, you may have noticed a strange pattern in one my previous code sample. I am talking about the loop inputs:
+
+    :::c++
+    // loop_inputs.hpp
+
+    constexpr auto get_game_state_string = []() constexpr // Why?
+    {
+        auto game_state_string = constexpr_string(
+            // Include the raw string literal into a variable
+            #include "current_state.txt"
+        );
+        return game_state_string;
+    };
+
+Why is the variable **game_state_string** encapsulated into a constexpr lambda? Why not making it a **constexpr global variable**?
+
+Well, I wanted to pass this variable and its content deep down to some functions. For instance, my **parse_board** needed to be fed with it and used it in some constant expressions:
+
+    :::c++
+    constexpr int parse_board_size(const char* game_state_string);
+
+    constexpr auto parse_board(const char* game_state_string)
+    {
+        std::array<ItemType, parse_board_size(game_state_string)> board{};
+        //                                       ^ ‘game_state_string’ is not a constant expression
+        // ...  
+    }
+
+    parse_boad(“...something...”);
+
+If you feed **parse_board** 
+
+*** **game_state_string**  
 
 #### Containers:
 
@@ -270,10 +319,6 @@ Sadly, as soon as you wake-up and start writing **C++14** while eating a bowl of
 
 
 #### Free food from the STL:
-
-
-
-#### Constexpr parameters:
 
 #### How to Kill Compile-Time Bugs?
 
