@@ -316,12 +316,12 @@ If you are doing it this way, your grumpy compiler will complain that the parame
 
 It boils down to the fact that **constexpr functions** MUST be usable for both runtime or compile-time computations. Allowing **constexpr parameters** would discard the possibility to use them at runtime.
 
-Thanksfully, there is a way to mitigate that issue. Instead of accepting the value as a normal function parameter, you can encapsulate that value into a type:
+Thanksfully, there is a way to mitigate that issue. Instead of accepting the value as a normal function parameter, you can encapsulate that value into a type and pass that type as a template parameter:
 
     :::c++
-    template <class GameString>
-    constexpr auto parse_board(GameString&&) {
-        std::array<CellType, parse_board_size(GameString::value())> board{};
+    template <class GameStringType>
+    constexpr auto parse_board(GameStringType&&) {
+        std::array<CellType, parse_board_size(GameStringType::value())> board{};
         // ...
     }
 
@@ -331,12 +331,49 @@ Thanksfully, there is a way to mitigate that issue. Instead of accepting the val
 
     parse_board(GameString{});
 
+In this code sample, I am creating a struct type **GameString** which has a static constexpr member function **value()** that returns the string literal I want to pass to **parse_board**. In **parse_board** I receive this type through the template parameter **GameStringType** thanks to template argument deduction rules. Having **GameStringType**, I can simply call the static member function **value()** whenever I want to get the string literal, even in locations where constant expressions are necessary since **value()** is constexpr. 
 
-*** **game_state_string**  
+We succeeded to encapsulate our literal to somehow pass it to **parse_board** in a constexpr way. Now, it gets very annoying to have to define a new type everytime you want to send a new literal to **parse_board**: "...something1...", "...something2...". To solve that issue in **C++11**, you can rely on some ugly macros and few indirection using an anonymous union and a lambda. Mikael Park has a nice explanation on this topic in [one of his post](https://mpark.github.io/programming/2017/05/26/constexpr-function-parameters/). 
 
-#### Containers:
+We can do even better in **C++17**. If you list our current requirements to pass our string literal, we need:
 
-##### constexpr_string and constexpr_string_view:
+- A generated function
+- Which is constexpr
+- With a unique or anonymous name
+
+This requirements should ring a bell to you. What we need is a **constexpr lambda**. And **C++17** rightfully added the possibility to use the **constexpr** keyword on a lambda. We could rewrite the code sample in such a way:
+
+    :::c++
+    template <class LambdaType>
+    constexpr auto parse_board(LambdaType&& get_game_state_string) {
+        std::array<CellType, parse_board_size(get_game_state_string())> board{};
+        //                                       ^ Allowed to call a constexpr lambda in this context.
+    }
+
+    parse_board([]() constexpr -> { return “...something...”; });
+    //                ^ Make our lambda constexpr.
+
+ Believe me, this feels already much neater than the previous **C++11** hackery using macros. I discovered this awesome trick thanks to **Björn Fahller**, a member of the C++ meetup group I participate in. You can read more about this trick on his [blog](http://playfulprogramming.blogspot.se/2016/08/strings-as-types-with-c17-constexpr.html). Note also that the **constexpr** keyword is actually not necessary in this case: all the **lambdas** with the capacity to be **constexpr** will be by default. Having an explicit **constexpr** in the signature just makes it easier to catch mistakes.
+
+ Now you should understand why I was forced to use a **constexpr** lambda to pass down the string representing my game state. Have a look at this lambda and one question should arise again. What is this **constexpr_string** type I also use to wrap the string literal?
+
+##### **constexpr_string** and **constexpr_string_view**:
+
+When you are dealing with strings, you do not want to deal with them the C way. All these pesky algorithms iterating in a raw manner and checking null ending should be forbidden! The alternative offered by **C++** is the almighty **std::string** and **STL algorithms**.
+
+    :::c++
+    template <std::size_t N>
+    class constexpr_string {
+    private:
+        std::array<char, N> data_;
+        std::size_t size_;
+    public:
+        constexpr constexpr_string(const char(&a)[N]): data_{}, size_(N -1) { // copy a into data_   }
+        // ...
+        constexpr iterator begin() {  return data_;   }
+        constexpr iterator end() {  return data_ + size_;   }
+        // ...
+    };
 
 
 #### Free food from the STL:
