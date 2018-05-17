@@ -316,6 +316,8 @@ If you are doing it this way, your grumpy compiler will complain that the parame
 
 It boils down to the fact that **constexpr functions** MUST be usable for both runtime or compile-time computations. Allowing **constexpr parameters** would discard the possibility to use them at runtime.
 
+<center><img width=25% height=25% src="{filename}/images/facepalm.jpg"/></center>
+
 Thanksfully, there is a way to mitigate that issue. Instead of accepting the value as a normal function parameter, you can encapsulate that value into a type and pass that type as a template parameter:
 
     :::c++
@@ -359,24 +361,101 @@ This requirements should ring a bell to you. What we need is a **constexpr lambd
 
 ##### **constexpr_string** and **constexpr_string_view**:
 
-When you are dealing with strings, you do not want to deal with them the C way. All these pesky algorithms iterating in a raw manner and checking null ending should be forbidden! The alternative offered by **C++** is the almighty **std::string** and **STL algorithms**.
+When you are dealing with strings, you do not want to deal with them the C way. All these pesky algorithms iterating in a raw manner and checking null ending should be forbidden! The alternative offered by **C++** is the almighty **std::string** and **STL algorithms**. Sadly, **std::string** may have to allocate on the heap (even wit Small String Optimization) to store their content. One or two standards from now we may benefit from **constexpr new/delete** or being able to pass **constexpr allocators** to **std::string**, but for now we have to find another solution.
+
+My approach was to write a **constexpr_string** class which has a fixed capacity. This capacity is passed as a value template parameter. Here is a short overview of my class:
 
     :::c++
-    template <std::size_t N>
+    template <std::size_t N> // N is the capacity of my string.
     class constexpr_string {
     private:
-        std::array<char, N> data_;
-        std::size_t size_;
+        std::array<char, N> data_; // Reserve N chars to store anything.  
+        std::size_t size_;         // The actual size of the string.
     public:
         constexpr constexpr_string(const char(&a)[N]): data_{}, size_(N -1) { // copy a into data_   }
         // ...
-        constexpr iterator begin() {  return data_;   }
-        constexpr iterator end() {  return data_ + size_;   }
+        constexpr iterator begin() {  return data_;   }       // Points at the beggining of the storage.
+        constexpr iterator end() {  return data_ + size_;   } // Points at the end of the stored string.
         // ...
     };
 
+My [constexpr_string](https://github.com/Jiwan/meta_crush_saga/blob/master/constexpr_string.hpp) class tries to mimic as closely as possible the interface of **std::string** (for the operations that I needed): you can query the **begin and end iterators**, retrive the **size**, get access to **data**, **erase** part of it, get a substring using **substr**, etc. It makes it very straightforward to transform a piece of code from **std::string** to **constexpr_string**. You may wonder what happens when you want to do use operations that would normally requires an allocation in **std::string**. In such cases, I was forced to transform them into **immutable operations** that would create new instance of **constexpr_string**.
+
+Let's have a look at the **append** operation:
+
+    :::c++
+    template <std::size_t N> // N is the capacity of my string.
+    class constexpr_string {
+        // ...
+        template <std::size_t M> // M the capacity of the other string.
+        constexpr auto append(const constexpr_string<M>& other)
+        {
+
+            constexpr_string<N + M> output(*this, size() + other.size());
+            //                 ^ Enough capacity for both. ^ Copy the first string into the output.
+
+            for (std::size_t i = 0; i < other.size(); ++i) {
+                output[size() + i] = other[i];
+                ^ Copy the second string into the output.
+            }
+
+            return output; 
+        }
+        // ...
+    };
+
+<img width=25% height=25% style="float:right;" src="{filename}/images/einstein.jpg"/>
+
+No needs to have a Fields Medal to assume that if we have a string of size **N** and a string or size **M**, a string of size **N + M** should be enough to store the concatenation. You may waste a bit of "compile-time storage" since both of your strings may not use their full capacity, but that is a fairly small price to pay for a lot of convenience. I, obviously, also wrote the counterpart of **std::string_view** which I named [constexpr_string_view](https://github.com/Jiwan/meta_crush_saga/blob/master/constexpr_string_view.hpp).
+
+<div style="clear: both;"></div>
+
+Having these two classes, I was ready to write elegant code to parse my **game state**. Think about something like that:
+
+    :::c++
+    constexpr auto game_state = constexpr_string(“...something...”);
+
+    // Let's find the first blue gem occurence within my string:
+    constexpr auto blue_gem = find_if(game_state.begin(), game_state.end(), 
+        [](char c) constexpr -> { return  c == ‘B’; }
+    );
+
+It was fairly simple to iterate over the gems on my board - speaking of which, did you notice another **C++17** gem in that code sample?
+
+Yes! I did not have to explicitely specify the capacity of my **constexpr_string** when constructing it. In the past, you had to explicitely specify the arguments of a class template when using it. To avoid this pain, we would provide *make_xxx* functions since parameters of function templates could be deduced. Have a look on how [class template argument deduction](http://en.cppreference.com/w/cpp/language/class_template_argument_deduction) is changing our life for the better:
+
+    :::c++
+    template <int N>
+    struct constexpr_string {
+        constexpr_string(const char(&a)[N]) {}
+        // ..
+    };
+
+    // **** Pre C++17 ****
+    template <int N>
+    constexpr_string<N> make_constexpr_string(const char(&a)[N]) {
+        // Provide a function template to deduce N           ^ right here
+        return constexpr_string<N>(a);
+        //                      ^ Forward the parameter to the class template.
+    }
+
+    auto test2 = make_constexpr_string("blablabla");
+    //                  ^ use our function template to for the deduction.
+    constexpr_string<7> test("blabla");
+    //               ^ or feed the argument directly and pray that it was the good one.
+
+
+    // **** With C++17 ****
+    constexpr_string test("blabla");
+    //           ^ Really smmoth to use, the argument is deduced.  
+
+In some tricky situations, you may still need to help your compiler to deduce correctly your arguments. If you encouter such an issue, have a look at [user-defined deduction guides](http://en.cppreference.com/w/cpp/language/class_template_argument_deduction#User-defined_deduction_guides).
 
 #### Free food from the STL:
+
+Alright, you can always rewrite things by yourself. But what did this bunch of ~~grumpy~~ committee members prepared for us in the standard library?
+
+
 
 #### How to Kill Compile-Time Bugs?
 
