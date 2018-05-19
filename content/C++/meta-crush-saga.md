@@ -27,7 +27,7 @@ As a normal game developer with a normal life working at a normal job with a nor
 
 ### Life cycle of a compile-time game:
 
-As an over-engineer cooking the next big compile-time game, you will still have use of your favorite language (still C++ of course!) to write your **game logic**. You will still have a **compilation phase** but... then... here comes the plot twist: you will **execute** your **game logic** within this compilation step. This is where your favorite language C++ truly comes in handy ; it has a some features like [Template Meta Programming (TMP)](https://en.wikipedia.org/wiki/Template_metaprogramming) or [constexpr](http://en.cppreference.com/w/cpp/language/constexpr) to actually have **computations** happening during the **compilation phase**. We will dive later on the features you can use to do so. As we are executing the **logic** of the game during this phase, we must also inject the **user inputs** at that point in time. Obviously, our compiler will still output an **executable**. What could it be used for? Well, the executable will not contain any **game loop** anymore, but it will have a very simple mission: output the newly **computed state**. Let's name this **executable** a **renderer** and its **output** the **rendering**. Our **rendering** won't contain any fancy particule effect nor ambiant occlusion shadows, it will be in ASCII. An ASCII **rendering** of your newly computed **state** has the nice property that you can easily show it to your player, but you also copy it into a text file. Why a text file? Obviously because you can combine it with your **code** in some way, redo all the previous steps and therefore have a **loop**.
+As an over-engineer cooking the next big compile-time game, you will still have use of your favorite language (still C++ of course!) to write your **game logic**. You will still have a **compilation phase** but... then... here comes the plot twist: you will **execute** your **game logic** within this compilation step. One could call it a compilutation. This is where your favorite language C++ truly comes in handy ; it has a some features like [Template Meta Programming (TMP)](https://en.wikipedia.org/wiki/Template_metaprogramming) or [constexpr](http://en.cppreference.com/w/cpp/language/constexpr) to actually have **computations** happening during the **compilation phase**. We will dive later on the features you can use to do so. As we are executing the **logic** of the game during this phase, we must also inject the **user inputs** at that point in time. Obviously, our compiler will still output an **executable**. What could it be used for? Well, the executable will not contain any **game loop** anymore, but it will have a very simple mission: output the newly **computed state**. Let's name this **executable** a **renderer** and its **output** the **rendering**. Our **rendering** won't contain any fancy particule effect nor ambiant occlusion shadows, it will be in ASCII. An ASCII **rendering** of your newly computed **state** has the nice property that you can easily show it to your player, but you also copy it into a text file. Why a text file? Obviously because you can combine it with your **code** in some way, redo all the previous steps and therefore have a **loop**.
 
 As you may understand now, a **compile-time** game is made of a **game-loop** where each **frame** of your game is a **compilation step**. Each **compilation step** is computing a new **state** of your game, that you can present to your player and also inject to the following **frame** / **compilation step**. 
 
@@ -48,7 +48,7 @@ Do you really think I would let you break my C++ meta-programming idyll with suc
 
 So what? Aren't you satisfied with my answers? Maybe your question should have been: "Why could you even do that?".
 
-As a matter of fact, I really wanted to play with the features introduced by C++17. Quite a few of them focus on improving the expressiveness of the language as well as the meta-programming facilities (mainly constexpr). Instead of writing small code samples, I thought that it would be more fun to turn all of this into a game. Pet projects are a nice way to learn concepts that you may not use before quite some time at work. Being able to run the core logic of your game at compile-time proves once a again that templates and constepxr are [turing complete](https://en.wikipedia.org/wiki/Turing_completeness) subsets of the C++ language.
+As a matter of fact, I really wanted to play with the features introduced by **C++17**. Quite a few of them focus on improving the expressiveness of the language as well as the meta-programming facilities (mainly constexpr). Instead of writing small code samples, I thought that it would be more fun to turn all of this into a game. Pet projects are a nice way to learn concepts that you may not use before quite some time at work. Being able to run the core logic of your game at compile-time proves once a again that templates and constepxr are [turing complete](https://en.wikipedia.org/wiki/Turing_completeness) subsets of the C++ language.
 
 
 ## Meta Crush Saga: an overview
@@ -84,7 +84,7 @@ As a matter of fact, I really wanted to play with the features introduced by C++
     > moves: 27
     )"
 
-The game-play of this Match-3 is not so interesting in itself, but what about the architecture running all of this? To understand it, I will try to explain each part of the life cycle of this **compile-time** game in term of code.
+The game-play of this specific Match-3 is not so interesting in itself, but what about the architecture running all of this? To understand it, I will try to explain each part of the life cycle of this **compile-time** game in term of code.
 
 ### Injecting the game state:
 <img width=50% height=50% src="{filename}/images/injecting-game-state.png"/>
@@ -522,6 +522,10 @@ I already hear optimisation affionados screaming on their chair! Yes, just addin
 
 ### Performance & bugs:
 
+Every triple A games must put efforts in these topics, right?
+
+#### Performance:
+
 When I achieved a first half-workingish version of **Meta Crush Saga** things ran rather smoothly. It actually reached a bit more than **3 FPS** (Frame Per Second) on my old laptop with an i5 clocked at 1.80GHz. As in any project, I quickly found my previously written code unsavoury and started to rewrite the parsing of my game state using **constexpr_string** and standard algorithms. Although it made my code much more maintenable it also had a severe impact on the performance ; **0.5 FPS** was the new ceiling. 
 
 <center><img width=35% height=35% src="{filename}/images/performance-rating.png"/></center>
@@ -529,15 +533,55 @@ When I achieved a first half-workingish version of **Meta Crush Saga** things ra
 Unlike the old C++ adage, "zero-head abstractions" did not apply to **compile-time computations**. Which really makes sense if you see your compiler as an interpreter of some "compile-time code". There is still room to improve for the various compilers, but also for us writers of such code. Here is a non-exhaustive list of few observations and tips, maybe specific to GCC, that I figured out:
 
 - **C arrays** performed significantly better than **std::array**. **std::array** is a bit of modern C++ cosmetic over a **C-style array** and one must pay a certain price to use it in such circumstances. 
-- It felt like **recursive functions** had the advantage (speed-wise) over writing **functions with loops**. It could well be that writing recursive algorithms forces you to tackle your problems in another way, which behaves better.
-- Avoid copying data (array of ints…)
-- Doesn’t use multiple core
+- It felt like **recursive functions** had the advantage (speed-wise) over writing **functions with loops**. It could well be that writing recursive algorithms forces you to tackle your problems in another way, which behaves better. To put in my two penny worth, I believe that the cost of compile-time calls might be smaller than executing a complicated function body especially that compilers (and their implementors) have been exposed to decades of abusive recursions we used for our own template-metaprogramming ends. 
+- Copying data around is also quite expensive, notably if you are dealing with value types. If I wanted to futher optimise my game, I would mainly focus on that problem.
+- I only <s>ab</s>used one of my CPU core to do the job. Having only one compilation unit restricted me to spawn only one instance of GCC at a time. I am not quite sure if you could parallelise my compilutation.
+
+#### Bugs:
+
+<img width=20% height=20% style="float: left;" src="{filename}/images/no-bugs.png"/>
+More than once, my compiler regurgitated terrible compilation errors, my code logic being flawed. But how could I find where the bug was located? Without **debugger** and **printf**, things get complicated. If your metaphoric programming beard is not up to your knees (both my metaphoric and physical one did not reach the expectations), you may not have the motivation to use [templight](https://github.com/mikael-s-persson/templight) nor to debug your compiler.
+
+Your first friend will be [static_assert](http://en.cppreference.com/w/cpp/language/static_assert), which gives you the possibility to test the value of a compile-time boolean. Your second friend will be a macro to turn on and off **constexpr** wherever possible:
+<div style="clear: both;"></div>
+
+    :::c++
+    #define CONSTEXPR constexpr  // compile-time No debug possible
+    
+    // OR
+    
+    #define CONSTEXPR           // Debug at runtime
+
+By using this macro, you can force the logic to execute at runtime and therefore attach a debugger to it.
 
 
+## Meta Crush Saga II - Looking for a pure compile-time experience:
 
+Clearly, **Meta Crush Saga** will not win [The Game Awards](https://en.wikipedia.org/wiki/The_Game_Awards) this year. It has some great potential, but the experience is not fully **compile-time** YET, which may be a showstopper for hardcore gamers... I cannot get rid-of the bash script, unless someone add **keyboard inputs** and impure logic during the compilation-phase (pure madness!). But I believe, that one day, I could entirely bypass the **renderer** executable and print my **game state** at **compile-time**:
 
+![Life cycle of a fully compile-time game]({filename}/images/life-cycle-fully-compile-time-game.png)
 
-## Meta Crush Saga II: looking for a pure compile-time experience:
+A crazy fellow pseudo-named **saarraz**, [extended GCC](https://github.com/saarraz/static-print) to add a **static_print** statement to the language. This statement would take a few constant expressions or string literals and output them during the compilation. I would be glad if such tool would be added to the standard, or at least extend **static_assert** to accept constant expressions.
 
+Meanwhile, there might be a **C++17** way to obtain that result. Compilers already ouput two things, **errors** and **warnings**! If we could somehow control or bend a **warning** to our needs, we may already have a decent output. I tried few solutions, notably the [deprecated attribute](http://en.cppreference.com/w/cpp/language/attributes):
 
-ALEXANDRE GOURDEEV.
+    :::c++
+    template <char... words>
+    struct useless {
+        [[deprecated]] void call() {} // Will trigger a warning.
+    };
+
+    template <char... words> void output_as_warning() { useless<words...>().call(); }
+
+    output_as_warning<’a’, ‘b’, ‘c’>();
+
+    // warning: 'void useless<words>::call() [with char ...words = {'a', 'b', 'c'}]' is deprecated 
+    // [-Wdeprecated-declarations]
+
+While the output is clearly there and parsable, it is unfortunately not playable! If by sheer luck, you are part of the secret-community-of-c++-programmers-that-can-output-things-during-compilation, I would be glad to recruit you in my team to create the perfect **Meta Crush Saga II**!
+
+## Conclusion:
+
+I am done selling you my <s>scam</s> game. Hopefully you found this post ludic and learned things along the reading. If you find any mistake or think of any potential improvement, please to do not hesitate to reach me.
+
+I would like to thanks the **SwedenCpp team** for letting me having my talk on this project during one of their event. And I particularly would like to express my gratitude to [Alexandre Gourdeev](https://www.linkedin.com/in/alexandre-gordeev/) who helped me improve **Meta Crush Saga** in quite a few significant aspects.
