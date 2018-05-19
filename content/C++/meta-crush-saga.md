@@ -1,6 +1,6 @@
 Title: Meta Crush Saga: a C++17 compile-time game
-Date: 14:00 04-10-2018 
-Modified: 14:00 04-10-2018 
+Date: 23:30 05-19-2018 
+Modified: 23:30 05-19-2018 
 Tags: C++17, TMP, meta programming, constexpr
 Slug: meta-crush-saga
 
