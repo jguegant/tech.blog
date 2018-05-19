@@ -453,13 +453,91 @@ In some tricky situations, you may still need to help your compiler to deduce co
 
 #### Free food from the STL:
 
-Alright, you can always rewrite things by yourself. But what did this bunch of ~~grumpy~~ committee members prepared for us in the standard library?
+Alright, you can always rewrite things by yourself. But did the committee members kindly cooked something for us in the standard library?
+
+##### New utility types:
+
+**C++17** introduced [std::variant](http://en.cppreference.com/w/cpp/utility/variant) and [std::optional](http://en.cppreference.com/w/cpp/utility/optional) to the common vocabulary types, with **constexpr** in mind. While the former one is really interesting since it permits you to express type-safe unions, the implementation provided in the **libstdc++** library with **GCC 7.2** had issues when used in constant expressions. Therefore, I gave up the idea to introduce **std::variant** in my code and solely utilized **std::optional**.
+
+Given a type **T**, **std::optional** allow you to create a new type **std::optional<T>** which may either hold a value of type **T** or nothing. It is pretty similar to [nullable value types](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/nullable-types/) in **C#**.
+Let's consider a **find_in_board** function that return the position of the first item in the board that validate a predicate. You may not have such an item in the board at all. To handle such a situation, the position type must be optional:
+
+    :::c++
+    template <class Predicate>
+    constexpr std::optional<std::pair<int, int>> find_in_board(GameBoard&& g, Predicate&& p) {
+        for (auto item : g.items()) {
+            if (p(item)) { return {item.x, item.y}; } // Return by value if we find such an item.
+        }
+        return std::nullopt; // Return the empty state otherwise.
+    }
+
+    auto item = find_in_board(g, [](const auto& item) { return true; });
+    if (item) {  // Test if the optional is empty or not.
+        do_something(*item); // Can safely use the optional by 'deferencing' with '*'.
+        /* ... */
+    }
+
+Previously, you would have recourse to either **pointer semantics** or add an "empty state" directly into your position type or return a boolean and take an **out parameter**. Let's face it, it was pretty clumsy!
+
+Some already existing types also received a **constexpr** lifting: [tuple](http://en.cppreference.com/w/cpp/utility/tuple) and [pair](http://en.cppreference.com/w/cpp/utility/pair). I will not explain their usage as a lot have been already written on these two, but I will share you one of my disapointment. The committee added to the standard a **syntactic sugar** to extract the values hold by a **tuple** or **pair**. Called [structured binding](http://en.cppreference.com/w/cpp/language/structured_binding), this new kind of declaration uses brackets to define in which variables you would like to store the exploded **tuple** or **pair**:
+
+    :::c++
+    std::pair<int, int> foo() {
+        return {42, 1337};
+    }
+
+    auto [x, y] = foo();
+    // x = 42 and y = 1337.
+
+Really clever! It is just a pity that the committee members [could not, would not, did not have the time, forgot, enjoyed not] to make it **constexpr** friendly. I would have expected something along the way:
+
+    :::c++
+    constexpr auto [x, y] = foo(); // OR
+    auto [x, y] constexpr = foo();
+
+We now have fancy containers and utilities, how can we manipulate them easily?
+
+##### Algorithms:
+
+Upgrading a container to a handle **constexpr** is a rather tedious work. Comparatively, bringing **constexpr** to **non-modifying algorithms** seems rather straightforward. But strangely enough, **C++17** did not see any progress in that domain, it is actually coming in **C++20**. For instance, the supreme [std::find](http://en.cppreference.com/w/cpp/algorithm/find) algorithms did not receive its **constexpr** signature.
+
+Worry not (or "Qu'à cela ne tienne" in French)! As explained by Ben and Jason, you can easily turn an algorithm in **constexpr** by simply copying a current implementation (checkout for copyrights though) ; cppreference being a good fit. Ladies and gentlemen, I present you a **constexpr std::find**:
+
+    :::c++
+    template<class InputIt, class T>
+    constexpr InputIt find(InputIt first, InputIt last, const T& value)
+    // ^ TADAMMMM!!! I added constexpr here.
+    {
+        for (; first != last; ++first) {
+            if (*first == value) {
+                return first;
+            }
+        }
+        return last;
+    }
+
+    // Thanks to: http://en.cppreference.com/w/cpp/algorithm/find
+
+I already hear optimisation affionados screaming on their chair! Yes, just adding **constexpr** in front of a code sample gently provided by **cppreference** may not give you the perfect **runtime performances**. But if we really had to polish this algorithm it would be for **compile-time performances**. Keeping things simple usually give the best results when it comes to speed of **compilation** from what I observed.
+
+### Performance & bugs:
+
+When I achieved a first half-workingish version of **Meta Crush Saga** things ran rather smoothly. It actually reached a bit more than **3 FPS** (Frame Per Second) on my old laptop with an i5 clocked at 1.80GHz. As in any project, I quickly found my previously written code unsavoury and started to rewrite the parsing of my game state using **constexpr_string** and standard algorithms. Although it made my code much more maintenable it also had a severe impact on the performance ; **0.5 FPS** was the new ceiling. 
+
+<center><img width=35% height=35% src="{filename}/images/performance-rating.png"/></center>
+
+Unlike the old C++ adage, "zero-head abstractions" did not apply to **compile-time computations**. Which really makes sense if you see your compiler as an interpreter of some "compile-time code". There is still room to improve for the various compilers, but also for us writers of such code. Here is a non-exhaustive list of few observations and tips, maybe specific to GCC, that I figured out:
+
+- **C arrays** performed significantly better than **std::array**. **std::array** is a bit of modern C++ cosmetic over a **C-style array** and one must pay a certain price to use it in such circumstances. 
+- It felt like **recursive functions** had the advantage (speed-wise) over writing **functions with loops**. It could well be that writing recursive algorithms forces you to tackle your problems in another way, which behaves better.
+- Avoid copying data (array of ints…)
+- Doesn’t use multiple core
 
 
 
-#### How to Kill Compile-Time Bugs?
-
-### Performance:
 
 
-## Meta Crush Saga II: looking for a pure compile-time experience
+## Meta Crush Saga II: looking for a pure compile-time experience:
+
+
+ALEXANDRE GOURDEEV.
