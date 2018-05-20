@@ -27,7 +27,7 @@ As a normal game developer with a normal life working at a normal job with a nor
 
 ### Life cycle of a compile-time game:
 
-As an over-engineer cooking the next big compile-time game, you will still have use of your favorite language (still C++ of course!) to write your **game logic**. You will still have a **compilation phase** but... then... here comes the plot twist: you will **execute** your **game logic** within this compilation step. One could call it a compilutation. This is where your favorite language C++ truly comes in handy ; it has a some features like [Template Meta Programming (TMP)](https://en.wikipedia.org/wiki/Template_metaprogramming) or [constexpr](http://en.cppreference.com/w/cpp/language/constexpr) to actually have **computations** happening during the **compilation phase**. We will dive later on the features you can use to do so. As we are executing the **logic** of the game during this phase, we must also inject the **user inputs** at that point in time. Obviously, our compiler will still output an **executable**. What could it be used for? Well, the executable will not contain any **game loop** anymore, but it will have a very simple mission: output the newly **computed state**. Let's name this **executable** a **renderer** and its **output** the **rendering**. Our **rendering** won't contain any fancy particule effect nor ambiant occlusion shadows, it will be in ASCII. An ASCII **rendering** of your newly computed **state** has the nice property that you can easily show it to your player, but you also copy it into a text file. Why a text file? Obviously because you can combine it with your **code** in some way, redo all the previous steps and therefore have a **loop**.
+As an over-engineer cooking the next big compile-time game, you will still have use of your favorite language (still C++ of course!) to write your **game logic**. You will still have a **compilation phase** but... then... here comes the plot twist: you will **execute** your **game logic** within this compilation step. One could call it a compilutation. This is where C++ truly comes in handy ; it has a some features like [Template Meta Programming (TMP)](https://en.wikipedia.org/wiki/Template_metaprogramming) or [constexpr](http://en.cppreference.com/w/cpp/language/constexpr) to actually have **computations** happening during the **compilation phase**. We will dive later on the features you can use to do so. As we are executing the **logic** of the game during this phase, we must also inject the **user inputs** at that point in time. Obviously, our compiler will still output an **executable**. What could it be used for? Well, the executable will not contain any **game loop** anymore, but it will have a very simple mission: output the newly **computed state**. Let's name this **executable** a **renderer** and its **output** the **rendering**. Our **rendering** won't contain any fancy particule effect nor ambiant occlusion shadows, it will be in ASCII. An ASCII **rendering** of your newly computed **state** has the nice property that you can easily show it to your player, but you also copy it into a text file. Why a text file? Obviously because you can combine it with your **code** in some way, redo all the previous steps and therefore have a **loop**.
 
 As you may understand now, a **compile-time** game is made of a **game-loop** where each **frame** of your game is a **compilation step**. Each **compilation step** is computing a new **state** of your game, that you can present to your player and also inject to the following **frame** / **compilation step**. 
 
@@ -46,7 +46,7 @@ Do you really think I would let you break my C++ meta-programming idyll with suc
 - You will gain respect from the **Javascript** hipster kingdom, where any over-complicated framework with a strong NIH syndrom can reign as long as it has a catchy name.
 - One of my friend used to say that any line of code from a Perl program provides you de-facto a very strong password. I surely bet that he never tried generating credentials from **compile-time C++**.
 
-So what? Aren't you satisfied with my answers? Maybe your question should have been: "Why could you even do that?".
+So what? Aren't you satisfied with my answers? Then, maybe your question should have been: "Why could you even do that?".
 
 As a matter of fact, I really wanted to play with the features introduced by **C++17**. Quite a few of them focus on improving the expressiveness of the language as well as the meta-programming facilities (mainly constexpr). Instead of writing small code samples, I thought that it would be more fun to turn all of this into a game. Pet projects are a nice way to learn concepts that you may not use before quite some time at work. Being able to run the core logic of your game at compile-time proves once a again that templates and constepxr are [turing complete](https://en.wikipedia.org/wiki/Turing_completeness) subsets of the C++ language.
 
@@ -91,7 +91,7 @@ The game-play of this specific Match-3 is not so interesting in itself, but what
 
 As a C++ afficionados or a nitpicker, you may have noticed that my previous dumped game state started with the following pattern: **R"(**. This is indeed a [C++11 raw string literal](http://en.cppreference.com/w/cpp/language/string_literal), meaning that I do not have to escape special characters like **line feed**. This raw string literal is stored in a file called [current_state.txt](https://github.com/Jiwan/meta_crush_saga/blob/master/current_state.txt).
 
-How do we inject this current game state into a compile state? Let's include it into the loop inputs!
+How do we inject this current game state into a compile state? Let's just include it into the loop inputs!
 
     :::c++
     // loop_inputs.hpp
@@ -176,7 +176,7 @@ Now that you have suffered your way into my explanations on the game's architect
 
 ![Meta Crush Saga in action]({filename}/images/meta-crush-saga.gif)
 
-This pixelated gif is a record of me playing **Meta Crush Saga**. As you can see, the game runs smoothly enough to make it playable in real-time. It is clearly not attractive enough to be able to stream it on Twitch and become the new Pewdiepie, but hey... it works!
+This pixelated gif is a record of me playing **Meta Crush Saga**. As you can see, the game runs smoothly enough to make it playable in real-time. It is clearly not attractive enough to be able to stream it on Twitch and for me to become the new Pewdiepie, but hey... it works!
 One of the funny aspect of having a **game state** stored as a *.txt* is the ability to cheat or test edge-cases really easily.
 
 Now that I sketched the architecture, we will dive a bit more in the C++17 features used within that project. I will not focus on the game logic, as it is very specific to a Match-3, but will instead discuss subjects of C++ that be could applied in other projects too.
@@ -275,7 +275,7 @@ As you may expect, **C++17** save us from such an embarassing situation by intro
 
 <img width=25% height=25% src="{filename}/images/constexpr-all-the-things.png"/>
 
-This is clearly a huge improvement compared to the **SFINAE trick** we had to employ until now. After that, you will start to get the same addiction as Ben and Jason which consists in constexpr everything, everywhere at anytime. Alas, there is still one place where the **constexpr** would well fit in but cannot be done yet: constexpr parameters.
+This is clearly a huge improvement compared to the **SFINAE trick** we had to employ until now. After that, you will start to get the same addiction as Ben and Jason which consists in **constexpr** everything, everywhere at anytime. Alas, there is still one place where the **constexpr** keyword would well fit in but cannot be done yet: **constexpr parameters**.
 
 #### Constexpr parameters:
 
@@ -309,7 +309,7 @@ Well, I wanted to pass this variable and its content deep down to some functions
 
     parse_board(“...something...”);
 
-If you are doing it this way, your grumpy compiler will complain that the parameter **game_state_string** is not a constant expression. When I am building my array of Gems, I need to compute its fixed capacity directly (you cannot use vectors at compile-time as it requires to allocate) and pass it as a value-template-argument to **std::array**. The expression **parse_board_size(game_state_string)** therefore needs to be a constant expression. While **parse_board_size** is clearly marked as **constexpr**, but **game_state_string** is not AND cannot be! Two rules are annoying us in this case:
+If you are doing it this way, your grumpy compiler will complain that the parameter **game_state_string** is not a constant expression. When I am building my array of Gems, I need to compute its fixed capacity directly (you cannot use vectors at compile-time as it requires to allocate) and pass it as a value-template-argument to **std::array**. The expression **parse_board_size(game_state_string)** therefore needs to be a constant expression. While **parse_board_size** is clearly marked as **constexpr**, **game_state_string** is not AND cannot be! Two rules are annoying us in this case:
 
 - Arguments of a constexpr function are not constexpr!
 - And you cannot add constexpr in front of them!
@@ -343,7 +343,7 @@ We can do even better in **C++17**. If you list our current requirements to pass
 - Which is constexpr
 - With a unique or anonymous name
 
-This requirements should ring a bell to you. What we need is a **constexpr lambda**. And **C++17** rightfully added the possibility to use the **constexpr** keyword on a lambda. We could rewrite the code sample in such a way:
+This requirements should ring a bell to you. What we need is a **constexpr lambda**! And **C++17** rightfully added the possibility to use the **constexpr** keyword on a lambda. We could rewrite the code sample in such a way:
 
     :::c++
     template <class LambdaType>
@@ -361,7 +361,7 @@ This requirements should ring a bell to you. What we need is a **constexpr lambd
 
 ##### **constexpr_string** and **constexpr_string_view**:
 
-When you are dealing with strings, you do not want to deal with them the C way. All these pesky algorithms iterating in a raw manner and checking null ending should be forbidden! The alternative offered by **C++** is the almighty **std::string** and **STL algorithms**. Sadly, **std::string** may have to allocate on the heap (even wit Small String Optimization) to store their content. One or two standards from now we may benefit from **constexpr new/delete** or being able to pass **constexpr allocators** to **std::string**, but for now we have to find another solution.
+When you are dealing with strings, you do not want to deal with them the C way. All these pesky algorithms iterating in a raw manner and checking null ending should be forbidden! The alternative offered by **C++** is the almighty **std::string** and **STL algorithms**. Sadly, **std::string** may have to allocate on the heap (even with Small String Optimization) to store their content. One or two standards from now we may benefit from **constexpr new/delete** or being able to pass **constexpr allocators** to **std::string**, but for now we have to find another solution.
 
 My approach was to write a **constexpr_string** class which has a fixed capacity. This capacity is passed as a value template parameter. Here is a short overview of my class:
 
@@ -422,7 +422,7 @@ Having these two classes, I was ready to write elegant code to parse my **game s
 
 It was fairly simple to iterate over the gems on my board - speaking of which, did you notice another **C++17** gem in that code sample?
 
-Yes! I did not have to explicitely specify the capacity of my **constexpr_string** when constructing it. In the past, you had to explicitely specify the arguments of a class template when using it. To avoid this pain, we would provide *make_xxx* functions since parameters of function templates could be deduced. Have a look on how [class template argument deduction](http://en.cppreference.com/w/cpp/language/class_template_argument_deduction) is changing our life for the better:
+Yes! I did not have to explicitely specify the capacity of my **constexpr_string** when constructing it. In the past, you had to explicitely specify the arguments of a **class template** when using it. To avoid this pain, we would provide *make_xxx* functions since parameters of **function templates** could be deduced. Have a look on how [class template argument deduction](http://en.cppreference.com/w/cpp/language/class_template_argument_deduction) is changing our life for the better:
 
     :::c++
     template <int N>
@@ -457,9 +457,9 @@ Alright, you can always rewrite things by yourself. But did the committee member
 
 ##### New utility types:
 
-**C++17** introduced [std::variant](http://en.cppreference.com/w/cpp/utility/variant) and [std::optional](http://en.cppreference.com/w/cpp/utility/optional) to the common vocabulary types, with **constexpr** in mind. While the former one is really interesting since it permits you to express type-safe unions, the implementation provided in the **libstdc++** library with **GCC 7.2** had issues when used in constant expressions. Therefore, I gave up the idea to introduce **std::variant** in my code and solely utilized **std::optional**.
+**C++17** introduced [std::variant](http://en.cppreference.com/w/cpp/utility/variant) and [std::optional](http://en.cppreference.com/w/cpp/utility/optional) to the common vocabulary types, with **constexpr** in mind. While the former one is really interesting since it permits you to express type-safe unions, the implementation provided in the **libstdc++** library with **GCC 7.2** had issues when used in constant expressions. Therefore, I gave up the idea to introduce **std::variant** in my code and solely utilised **std::optional**.
 
-Given a type **T**, **std::optional** allow you to create a new type **std::optional<T>** which may either hold a value of type **T** or nothing. It is pretty similar to [nullable value types](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/nullable-types/) in **C#**.
+Given a type **T**, **std::optional** allows you to create a new type **std::optional<T>** which may either hold a value of type **T** or nothing. It is pretty similar to [nullable value types](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/nullable-types/) in **C#**.
 Let's consider a **find_in_board** function that return the position of the first item in the board that validate a predicate. You may not have such an item in the board at all. To handle such a situation, the position type must be optional:
 
     :::c++
@@ -526,7 +526,7 @@ Every triple A games must put efforts in these topics, right?
 
 #### Performance:
 
-When I achieved a first half-workingish version of **Meta Crush Saga** things ran rather smoothly. It actually reached a bit more than **3 FPS** (Frame Per Second) on my old laptop with an i5 clocked at 1.80GHz. As in any project, I quickly found my previously written code unsavoury and started to rewrite the parsing of my game state using **constexpr_string** and standard algorithms. Although it made my code much more maintenable it also had a severe impact on the performance ; **0.5 FPS** was the new ceiling. 
+When I achieved a first half-workingish version of **Meta Crush Saga** things ran rather smoothly. It actually reached a bit more than **3 FPS** (Frame Per Second) on my old laptop with an i5 clocked at 1.80GHz (frequency do matter in this case). As in any project, I quickly found my previously written code unsavoury and started to rewrite the parsing of my game state using **constexpr_string** and standard algorithms. Although it made my code much more maintenable it also had a severe impact on the performance ; **0.5 FPS** was the new ceiling. 
 
 <center><img width=35% height=35% src="{filename}/images/performance-rating.png"/></center>
 
