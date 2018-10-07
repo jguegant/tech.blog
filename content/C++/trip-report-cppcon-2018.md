@@ -24,29 +24,32 @@ Does this sound exciting to you, but you missed the opportunity to come this yea
 <center><img width=50% height=50% src="{filename}/images/bellevue.jpg"/></center>
 
 
-# My experience of the event:
+# My experience over there:
 
-Right before leaving 
+Right before leaving Stockholm, I had the great idea to listen to my favorite C++ podcast [CppCast](http://cppcast.com/). The guest for that week was **Bryce Adelstein Lelbach** who is one of the organiser of CppCon. Bryce had 4 advices for any new attendee of the conference, which matched my experience at [Meeting C++]({filename}../C++/trip-report-meetingcpp.md) last year and turn out to be valid for CppCon too:
 
-Last year, after at 3 days at [Meeting C++]({filename}../C++/sfinae-introduction.md). concluded
+- Have no regrets! Indeed, as an attendee you will quickly discover that two or three appealing talks will be on the same time slot. Just randomly pick one of the talk or none if you need to rest a bit. If luck is not on your side that day and you missed a terrific talk due to that issue, you will naturally hear about it from others and you will have plenty of time to binge-watch it on Youtube later on. Having that in mind, I was much more relax at this conference than I was at my very intense days at **Meeting C++**. If you really dislike to choose you will anyway ends-up following someone, you just chit-chated within the corridors, to the talk of his choice. Which brings us to the second advice you should follow...
+- Engage with the community!
+- Be confused!
+- Be bold! The concentration of "legendary C++ devs" per square meter is even higher than in **Meeting C++**.
 
-Bryce Adelstein Lelbach: 
-- No regrets.
-- Engage with the community.
-- Be confused.
-- Be bold.
+Following these rules made a very smooth to me.
 
-
-Don't get me wrong, you DO NOT need  
-
-As some talks happen simulteanously in different rooms, you cannot physically attend all the talks. Instead, you would usually prepare your own schedule by trying to guess the content of the talks from their summary. It is always a dilemna to choose between a topic that you like with the risk to have nothing new to learn, and a brand-new topic for you, where sleepness may kick-in midway to the presentation. If you are curious and daring, the lightning talks on the last day permit you to randomly discover antyhing about C++ in succint presentations. In any case, you can always catch-up the missed talks by checking the [Youtube channel](https://www.youtube.com/user/MeetingCPP).
+Having seen
 
 Generally, I was not disapointed by the quality of the slides and the speakers. I picked up quite a few new concepts, prepared myself for the future of **C++** (C++20) and refreshed myself on some fields I did not touch for a while.
 
-## More than just talks:
+Lightning talks are too late!
 
 
-Where **Meeting C++** really shines is in its capacity to gather roughly 600 passionated developers from various backgrounds (university, gaming industry, finance, Sillicon Valley's giants...) in one building and **share**. Just share anything about C++, about reverse-engineering, about your job, about your country, about the german food in your plate! The C++ community represented at this event is very active, open-minded and willing to help. The catering between the sessions and the dinner parties permit you to meet anyone easily. The even team also oganises some really fun events
+<center><img width=50% height=50% src="{filename}/images/cppcon.jpg"/></center>
 
-In a room full of "world-class developers", it is easy to be intimidated, but you should not hesitate to reach them. They will not nitpick your words nor snob you. For some people, it is a dream to meet an Hollywood Star in the street, for me it was really delightful to have casual conversations with these "legendary" coders from the web.
+# The chief's suggestions of the year:
+
+Once again, here is a menu of most of the talks I particulary enjoyed. The legend is pretty simple:
+
+- 💀 : The difficulty of the talk (💀: Begginer friendly, 💀💀: Intermediate, 💀💀💀: High exposure to C++'s dark corners)
+- ★ : My interest for the talk (★: Good talk, ★★: Tasty talk, ★★★: Legendary talk)
+
+I promise you not to spoil all the talks, but simply try to give an overview of what you can expect within them. Although most of the talks are most likely worth to be seen, I forced my-very-subjective-self to pick very few of them. I have seen people with very different "favorite talk" and you should not feel sad if your own talk is not part of this not-so-prestigious list.
 
