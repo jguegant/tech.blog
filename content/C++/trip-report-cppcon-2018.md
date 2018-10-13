@@ -53,7 +53,7 @@ Once again, here is a menu of most of the talks I particulary enjoyed. The legen
 - 💀 : The difficulty of the talk (💀: Begginer friendly, 💀💀: Intermediate, 💀💀💀: High exposure to C++'s dark corners)
 - ★ : My interest for the talk (★: Good talk, ★★: Tasty talk, ★★★: Legendary talk)
 
-I promise you not to spoil all the talks, but simply try to give an overview of what you can expect within them. Although most of the talks are most likely worth to be seen, I forced my-very-subjective-self to pick very few of them. I have seen people with very different "favorite talk" and you should not feel sad if your own talk is not part of this not-so-prestigious list.
+I promise you not to spoil everything in the talks, but simply try to give an overview of what you can expect within them or some conclusions. Although most of the talks are most likely worth to be seen, I forced my-very-subjective-self to pick very few of them. I have seen people with very different "favorite talk" and you should not feel sad if your own talk is not part of this not-so-prestigious list.
 
 ### [Keynote] Concepts: The Future of Generic Programming (the future is here) - Bjarne Stroustrup - 💀★★★:
 
@@ -144,7 +144,15 @@ You may not know what is a value wrapper, but I surely bet that you already mani
 
 It might be a breeze to work with most of these wrappers (certainely not you verbose [std::variant](https://en.cppreference.com/w/cpp/utility/variant)), but the poor souls writting implementations of these must go to great lengths to make them behave as they should. Value wrappers, as their name imply, try to mimic as closely as possible the type of a given value. All the types have some basic properties: can it be explicitely constructed? Are the [special member functions](https://en.wikipedia.org/wiki/Special_member_functions) noexcept? Can it be called in a constant expression? Can it be compared? And much more... A wrapper must react exactly in the same way when it comes to these properties. 
 
-In this talk, Simon compares the old fashioned way to tackle these issues and present how it will look like as soon as the concepts and bunch of other proposals (explicit operator akin to the noexcept operator, correctly deduced *this* parameter...) arrive in C++20. Regardless if you are planning to write such wrappers or not, I would suggest to watch it to refresh yourself on some tricky C++ mechanisms.
+In this talk, Simon compares the old fashioned way to tackle these issues and present how it will look like as soon as the concepts and bunch of other proposals arrive in C++20:
+
+- Explicit operator akin to the noexcept operator
+- [P0748R0](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0848r0.html) to use **concepts-based require clauses** on these member functions to enable or disable them. A.K.A goodbye a lot of uncessarry conditional inheritance. 
+- [P0847R0](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0847r0.html) which permits to deduce correctly the implicit **this** parameter type of a member function. A.K.A goodbye all the methods overloading on const, volatile and ref qualifiers. 
+- [P0515R2](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0515r2.pdf) that unify all the comparison operators into one. A.K.A goodbye all the operator overloads.
+- ... Some more that I surely forgot.
+
+Regardless if you are planning to write such wrappers or not, I would suggest to watch the talk to refresh yourself on some tricky C++ mechanisms.
 
 ### [Talk] Fancy Pointers for Fun and Profit - Bob Steagall - 💀💀 ★★:
 
@@ -154,25 +162,136 @@ In this talk, Simon compares the old fashioned way to tackle these issues and pr
 **Bob Steagall** promoted his own talk on **fancy pointers** in an early September **CppCast** episode.
 So here I was, ready to learn more about these mystical beasts!
 
-**Allocators** in C++ are rather infamous for their over-engineered interface, which is not useful 99.42% of the time. This even forced the committee to come-up, in **C++17**, with a lighter interface called [PMR](https://youtu.be/v3dz-AKOVL8). But this time, the good old full-blown interface found a very clever usage in Bob's hands. Indeed, [std::allocator_traits](https://en.cppreference.com/w/cpp/memory/allocator_traits) has a nice type property **pointer**. Which means that the Standard offers a nice [customization point](https://quuxplusone.github.io/blog/2018/03/19/customization-points-for-functions/) to switch normal pointers **T\*** for a given allocator to a type that acts like a pointer would. These wannabe pointers are what you call **fancy pointers**. Somehow, you can think of **fancy pointers** as more generalize concept than [smart pointers](https://en.wikipedia.org/wiki/Smart_pointer).   
+**Allocators** in C++ are rather infamous for their over-engineered interface, which is not useful 99.42% of the time. This even forced the committee to come-up, in **C++17**, with a lighter interface called [PMR](https://youtu.be/v3dz-AKOVL8). But this time, the good old full-blown interface found a very clever usage in Bob's hands. Indeed, [std::allocator_traits](https://en.cppreference.com/w/cpp/memory/allocator_traits) has a nice type property **pointer**. Which means that the Standard offers a nice [customization point](https://quuxplusone.github.io/blog/2018/03/19/customization-points-for-functions/) to switch normal pointers **T\*** for a given allocator to a type that acts like a pointer would. These wanna-be pointers are what you call **fancy pointers**. Somehow, you can think of **fancy pointers** as more generalized concept of [smart pointers](https://en.wikipedia.org/wiki/Smart_pointer).   
 
-Now let's say that you would like to serialize a vector of POD by simply memcopy. 
- 
+Now let's say that you would like to serialise to / deserialise from binary a container-like object (vector, list...) with a bunch of [trivial objects](https://msdn.microsoft.com/en-us/library/mt767760.aspx?f=255&MSPPError=-2147217396) inside and send it through a network. Providing that you are targeting one and only one architecture, which is often the case for servers, you may be able to use [std::memcpy](https://en.cppreference.com/w/cpp/string/byte/memcpy) to transfer the representation of this container into a **char\*** buffer. Then, the whole buffer can be wired to another machine. At the endpoint, to deserialise the container from that buffer you can re-use **std::memcpy** to copy back the binary representation into a container ([note that you cannot rely reinterpret_cast in C++ for that purpose](https://www.reddit.com/r/cpp/comments/5fk3wn/undefined_behavior_with_reinterpret_cast/)...). This will work smoothly as long as none of the stored PODs have pointers as members referencing each others! Indeed, pointers are usually not valid as soon as you cross the boundary of a process or a machine. This huge drawback can be avoided by introducing **fancy pointers** to your code-base. 
 
-### [Talk] RVO is Harder than it Looks: the story of -Wreturn-std-move - Arthur O'Dwyer:
+For instance, Bob brings **offset_ptr** to the table, which permits to express some reference between two elements using their distance from each others:
+```
+struct obj
+{
+	value_type v;
+	offset_ptr<value_type> p; // optional
+}; 
 
-### State Machines Battlefield - Naive vs STL vs Boost - Erik Valkering:
+Example of the layout of a container of objs:
 
-### Compile-time programming and reflection in C++20 and beyond - Louis Dionne:
+                               -2
+                +-----------------------------+
+                |        1                    |
+                |     +-----+                 |
+ +--------------v-----------v--------------------------------+
+ |  v  |  p  |  v  |  p  |  v  |  p  |  V  |  p  |  v  |  p  |
+ +-----------------------------------------------------------+
+          |                             ^
+          |                             |
+          +-----------------------------+
+                       3
 
-### Thoughts on a More Powerful and Simpler C++ (5 of N) - Herb Sutter:
+```
+With a bit of boilerplate, this **offset_ptr** can be handled by a custom allocator that can be injected into a container, making different address mappings a non-issue.
+I find this solution pretty elegant and is a good showcase on how extensible the Standard Library is. 
+
+
+### [Talk] RVO is Harder than it Looks: the story of -Wreturn-std-move - Arthur O'Dwyer - 💀💀 ★:
+
+- Slides: [link](https://github.com/CppCon/CppCon2018/blob/master/Presentations/return_value_optimization_harder_than_it_looks/return_value_optimization_harder_than_it_looks__arthur_odwyer__cppcon_2018.pdf)
+- Video: [coming soon]()
+
+It is commonly admitted that returning by value seldom has a performance impact in C++. Two mechanisms [(N)RVO](https://en.wikipedia.org/wiki/Copy_elision#Return_value_optimization) and [move semantics](http://thbecker.net/articles/rvalue_references/section_02.html) will most likely kick in to avoid unecessary copies:
+
+```c++
+
+struct A
+{
+// ... some members
+};
+
+A foo() {
+	A a;
+	// ...
+	return a;
+}
+
+A a = foo(); // The return value is directly constructed in a's stack location (RVO), can fall back onto the move-constructor otherwise. 
+```
+
+As time goes by, the C++ standard has stronger and stronger guarantees that copy ellision (RVO) will happen in these situations.
+At the same time, forcefully moving the return value can a pretty huge pessimisation and is taught as an anti-pattern:
+```c++
+A foo() {
+	A a;
+	// ...
+	return std::move(a); // Will hinder the compiler to choose RVO instead of move constructor.
+}
+```
+In the worst case scenario, if the object has no move-constructor, the compiler might resort to use the copy constructor, which could have been avoided with RVO.
+
+
+Now in the **C++ land** nothing really holds true if you look closer at some corner cases. And "no-move-on-return-values" rule mentioned right above can be debated for that reason. Arthur was valiant enough to inquire into this topic and found few cases where a call to **std::move** will BE an optimization. Notably, if you return a value with a type convertible to the function's return type thanks to an [explicit conversion operator](https://en.cppreference.com/w/cpp/language/cast_operator), you should apply **std::move**. Arthur introduced a new warning in clang [-Wreturn-std-move](https://reviews.llvm.org/D43322) to avoid this pitfall. I will gadly turn that warning on as soon as I can.
+
+I liked the talk for delving into such precise topics ; although, Arthur rushed on quite a few slides and even skipped a whole bunch of them, meaning that there was more to say on this theme. 
+
+### [Talk] State Machines Battlefield - Naive vs STL vs Boost - Kris Jusiak - 💀💀 ★:
+
+- Slides: [link](https://github.com/CppCon/CppCon2018/blob/master/Presentations/state_machines_battlefield_naive_vs_stl_vs_boost/state_machines_battlefield_naive_vs_stl_vs_boost__kris_jusiak__cppcon_2018.pdf)
+- Video: [link](https://www.youtube.com/watch?v=yZVby-PuXM0)
+
+**Kris Jusiak** is the proud author of two library aspiring to be into [Boost](https://www.boost.org/): [Boost.DI](http://boost-experimental.github.io/di/) and [Boost.SML](https://github.com/boost-experimental/sml). This talk was partly based on the later one. More precisely **Kris** compared how different implementations of a state machine would fare in term of performance and ease to maintain.
+
+**Kris** started with a good ol' implementation designed around a giant switch case roughly similar to this code:
+```c++
+class connection {
+	// ...
+	void update(event e) {
+		switch(state_) {
+			case connecting:
+				if (e && e->type == event_type::established) {
+					state_ = state::connected;	
+					log("connected");	
+				}
+			break;
+			case connected:
+				// ...
+				do_connected_things();
+				// ...
+			break;
+			// ...
+			default:
+				throw runtime_exception("bad state");
+			break;
+		}
+	}
+	// ...
+
+	int variable_for_connected_state;
+	int another_variable_for_connected_state;
+	int variable_for_disconnected_state;
+	// ...
+	state state_;
+};
+```
+Surely, this implementation will perform rather decently, but at the cost of being extremely hard to maintain if the amount of states increase. Sadly, a lot of code-bases for games or networking have plenty of these ugly state machines sprinkled around. **C++** is all about **zero-cost abstractions**, which means that if you want to avoid some serious posttraumatic stress disorders after working on such projects, you may want to look at other choices than switch.
+
+Therefore, **Kris** jumped onto an implementation using [std::variant](https://en.cppreference.com/w/cpp/utility/variant) which reminded me a lot a blog post from [Kalle Huttunen](https://khuttun.github.io/2017/02/04/implementing-state-machines-with-std-variant.html). **std::variant** will permit you to isolate the variables necessary for your different states and will enforce a stricter handling of your state with [std::visit](https://en.cppreference.com/w/cpp/utility/variant/visit). It is not. After dwelling with two oldish and slow Boost libraries, Kris turned onto  
+
+He then moved onto [](https://khuttun.github.io/2017/02/04/implementing-state-machines-with-std-variant.html).
+
+More than **Boost.DI** 
+
+### [Talk] Compile-time programming and reflection in C++20 and beyond - Louis Dionne - 💀💀💀 ★★★:
+
+- Slides: [link](https://github.com/CppCon/CppCon2018/blob/master/Presentations/return_value_optimization_harder_than_it_looks/return_value_optimization_harder_than_it_looks__arthur_odwyer__cppcon_2018.pdf)
+- Video: [coming soon]()
+
+Three skulls, three stars, nothing unusual when it comes to my judgement on **Louis Dionne's** talks. 
+
+### [Keynote] Thoughts on a More Powerful and Simpler C++ (5 of N) - Herb Sutter:
 
 Implementing the C++ Core Guidelines’ Lifetime Safety Profile in Clang Matthias Gehre • Gabor Horvath
 
 
 ### Better C++ using Machine Learning on Large Projects - Nicolas Fleury and Mathieu Nayrolles:
-
-### Dealing with aliasing using contracts - Gabor Horvath:
 
 ### Class Template Argument Deduction for Everyone - Stephan T. Lavavej:
 
