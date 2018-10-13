@@ -273,11 +273,26 @@ class connection {
 ```
 Surely, this implementation will perform rather decently, but at the cost of being extremely hard to maintain if the amount of states increase. Sadly, a lot of code-bases for games or networking have plenty of these ugly state machines sprinkled around. **C++** is all about **zero-cost abstractions**, which means that if you want to avoid some serious posttraumatic stress disorders after working on such projects, you may want to look at other choices than switch.
 
-Therefore, **Kris** jumped onto an implementation using [std::variant](https://en.cppreference.com/w/cpp/utility/variant) which reminded me a lot a blog post from [Kalle Huttunen](https://khuttun.github.io/2017/02/04/implementing-state-machines-with-std-variant.html). **std::variant** will permit you to isolate the variables necessary for your different states and will enforce a stricter handling of your state with [std::visit](https://en.cppreference.com/w/cpp/utility/variant/visit). It is not. After dwelling with two oldish and slow Boost libraries, Kris turned onto  
+Therefore, **Kris** jumped onto other implementations. One of the them is using [std::variant](https://en.cppreference.com/w/cpp/utility/variant) which reminded me a lot a blog post from [Kalle Huttunen](https://khuttun.github.io/2017/02/04/implementing-state-machines-with-std-variant.html). **std::variant** will permit you to isolate the variables necessary for your different states and will enforce a stricter handling of your state with [std::visit](https://en.cppreference.com/w/cpp/utility/variant/visit). In my opinion this solution is huge improvement compared to using a switch and does not require the introduction of an external library into your project. As I will explain later, **std::variant** may or may not have a slight performance impact.
 
-He then moved onto [](https://khuttun.github.io/2017/02/04/implementing-state-machines-with-std-variant.html).
+After dwelling with two oldish and rather slow Boost libraries that can help to design state machines, Kris presented us his work. I have to admit that the [DSL](https://en.wikipedia.org/wiki/Domain-specific_language) provided by his library looks very pleasant to use: 
 
-More than **Boost.DI** 
+```c++
+// Coming straight from Kris's slides:
+sml::sm connection = []{
+	using namespace sml;
+	return transition_table{
+		* "Disconnected"_s + event<connect> / establish = "Connecting"_s,
+		"Connecting"_s + event<established> = "Connected"_s,
+		"Connected"_s + event<ping> [ is_valid ] / reset_timeout,
+		"Connected"_s + event<timeout> / establish = "Connecting"_s,
+		"Connected"_s + event<disconnect> / close = "Disconnected"_s
+	};
+};
+```
+
+**Boost.DI** is performing very well according to Kris and is on par with the switch solution according to his benchmark.
+**Boost.DI** offers different dispatch strategies to get the current state:  **recursive branching**, [jump table](https://mpark.github.io/programming/2015/07/07/variant-visitation/), [fold expressions](https://en.cppreference.com/w/cpp/language/fold)... It turns out that the **recursive branching** is amongst the fastest yelding results as close as if writing a giant switch by hand. I am not so surprised by these results, since we observed a similar pattern at work with our custom implementation of **std::visit**. As far as I know, **clang** and **gcc** visit their **std::variant** using a **jump table**, which may explain the slight performance drop compared to a giant switch. These are good news though, it means that there is room to improve the Quality of Implementation (QoI) of **std::visit** in our favorite libraries.  
 
 ### [Talk] Compile-time programming and reflection in C++20 and beyond - Louis Dionne - 💀💀💀 ★★★:
 
