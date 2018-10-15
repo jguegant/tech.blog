@@ -42,7 +42,7 @@ Due to the short format, people often go straight to the point which is really p
 For instance, this year there was an epic lightning talk battle on [East Const vs West Const](https://arne-mertz.de/2018/05/trailing-return-types-east-const-and-code-style-consistency/) or a touching "Thank You" speech from **Dr. Walter E. Brown**. 
 If that sounds interesting to you, you will have to stay awake from 8.30pm to 10.00pm which is where my grudge comes from.
 After absorbing some C++ since roughly 9.00am, and with a pretty strong jetlag (=~9h for central Europeans) you really need to channel all your inner motivation to attend any of these late activities.
-The lightning being such joyfull part of **CppCon**, I would argue that some of them could be moved to an earlier slot in the day...
+The lightning talks being such joyfull part of **CppCon**, I would argue that some of them could be moved to an earlier slot in the day...
 
 Enough of my pseudo-rant on an almost perfect event and let's continue with some more concrete reporting! 
 
@@ -296,17 +296,104 @@ sml::sm connection = []{
 
 ### [Talk] Compile-time programming and reflection in C++20 and beyond - Louis Dionne - 💀💀💀 ★★★:
 
-- Slides: [link](https://github.com/CppCon/CppCon2018/blob/master/Presentations/return_value_optimization_harder_than_it_looks/return_value_optimization_harder_than_it_looks__arthur_odwyer__cppcon_2018.pdf)
+- Slides: [coming soon]()
+- Video: [link](https://www.youtube.com/watch?v=CRDNPwXDVp0)
+
+Three skulls, three stars, nothing unusual when it comes to my judgement on **Louis Dionne's** talks. I am very fond (template) meta-programming, and I have always been in awe of Louis's work on [Boost.Hana](https://www.boost.org/doc/libs/1_61_0/libs/hana/doc/html/index.html) and more recently [dyno](https://github.com/ldionne/dyno). This year, he was on stage to give us an overview on what we could expect in the upcomming standards concerning [constexpr](https://en.cppreference.com/w/cpp/language/constexpr), and how this would unlock a better interface for reflection.
+
+We are slowly but surely reaching the point where we will be able to "allocate" at compile-time and convert most of our code-bases to **constexpr** within a blink. Louis explained what are the necessary changes we need to apply to [constexpr](https://en.cppreference.com/w/cpp/language/constexpr) to be able to use it in expressions where we do allocate:
+
+- Allowing constexpr non-trivial destructors, allowing heap allocation and placement new that you will find in [P0784R0](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0784r0.md).
+- Having the new trait **std::is_constant_evaluated** from [P0595R0](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0595r1.html) that queries whether the compiler is currently evaluating the function in a constexpr context or not. Surprisingly, you will NOT use that trait within a **if constexpr** statement ; this would always be evaluated as constexpr and return **true**, a simple **if** does the job. This trait is an absolute necessity if we want to share a single interface for both a **constexpr** and runtime implementation of a feature (a std::vector...). Behind the scene, **constexpr** code usually has very different demands to perform corretly than standard runtime code.  
+- Support **try-catch** statements within a **constexpr** expression which we would get from [P1002R0](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1002r0.pdf). Note that this does imply that the compiler
+- Some other minor changes that must appear in some other hairy white papers ...
+
+Taking all these changes in consideration, we should be able to slap **constexpr** on many containers and algorithms from the STL (vector, string...). That would make the usage of **constexpr** very trivial to any decent **C++** developer.
+
+It will also be a great paradigm shift for the planned reflection within the language. The standard committee used to formulate a reflection proposal based on **template meta-programming**, which dreadfully reminds you some kind of [Boost.MPL](https://www.boost.org/doc/libs/1_68_0/libs/mpl/doc/index.html). 
+While templates are powerfull, the syntax to manipulate types appears alienesque to most of the human coders. 
+**Constexpr-based metaprogramming** looks a lot more natural and having proper containers was the last missing part of the puzzle to use that syntax for reflection. 
+If you are in doubt, have a look at this very short example from Louis: 
+```c++
+struct my_struct
+{
+	int x;
+	std::string y;
+	// ...
+};
+
+// Get the type of the first member of my_struct using the old template-based syntax:
+using my_struct_meta = reflexpr(my_struct);
+using members = std::reflect::get_data_members_t<my_struct>; // Some weird template list-like type.
+using x_meta = std::reflect::get_element_t<0, members>; // Some ideaous index accessor.
+using x_type = std::reflect::get_reflected_type_t<x_meta>;
+
+// Get the type of the first member of my_struct with the new fancy constexpr-based syntax:
+constexpr std::reflect::Record my_struct_meta = reflexp(my_struct);
+constexpr std::vector members = my_struct_meta.get_data_members(); // Uses the good ol' vector and class template argument deduction guides from C++17.
+constexpr std::reflect::RecordMember x_meta = members[0]; // Just use the operator[] as usual... 
+using type = unreflexpr(x_meta.get_reflected_type()); // Get that actual type of x.
+```
+
+If you want to have a better understanding on the proposed syntax, have a look at [P0962R0](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0953r0.html).
+
+### [Keynote] Thoughts on a More Powerful and Simpler C++ (5 of N) - Herb Sutter - 💀💀 ★★★:
+
+- Slides: [coming soon]()
+- Video: [link](https://www.youtube.com/watch?v=80BZxujhY38)
+
+The last two years, at CppCon, Herb brought us his vision on a future **C++** full of promises.
+Both of these talks were accompanied with some concrete actions (white-papers, guidelines, proof-of-concepts..) that Herb was working on with the rest of the fellowship of the C++s. This year, Herb shared with us some more results on his goals.
+It might not sound like a thrilling talk... but that would be under-appreciating the two main ideas Herb was initially pushing for: lifetimes and meta-classes.
+
+
+Lifetimes are some implicit or explicit rules that directly concern the ownership of an object.
+If such lifetime rules are adjusted correctly, your code should be bulletproof when it comes to huge range of bugs related to memory: user after free, dandling pointers...
+Some languages like **Rust** even make it a core concept of the language. Arguably, Herb's lifetimes will be slightly more relaxed (no annotations on everything) and natural to use, at the price of not covering some extreme cases. 
+Let's have a look at what these so-called lifetimes may protect you from:
+
+```c++
+int& foo() {
+	int a;
+	return a; // Oups I am returning a reference to a local variable that will die right after that function execution.
+	// Some compilers may warn you about it, some may not! 
+}
+
+std::reference_wrapper<int> foo() {
+	int a;
+	return std::reference_wrapper<int>(a); // Same issue. No compiler warns you about it! 
+}
+```
+After applying the rules elaborated by Herb and his crew, the lifetime of **a** would be dimmed as ending at the end of foo and the compiler would yield a strong warning or a plain error.
+Here [std::reference](https://en.cppreference.com/w/cpp/utility/functional/reference_wrapper) is considered as a pointer/reference type and will be highly scrutinised by the compiler.
+If you combine the lifetimes and the concepts, your compiler or linter may be able to discover the pointer types automagically!
+
+Another trivial bug yet often spawning nastily in your code is the dreaded "use-after-move" situation. Here again, lifetimes would avoid an easy shoot in the feet situation:
+```c++
+my_class my_obj;
+my_class another_obj = std::move(my_obj);
+
+my_obj.x->bla = 42; // lifetime warning: using a moved-from obj is seldom a good idea.
+```  
+All these smart lifetime rules are often based on recommendations that you may find in [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines).
+Having them enforced within your projects is amazing. I am eager to try the clang implementation of it. Later in the day **Matthias Gehre** and **Gabor Horvath** did show us the internals clang that will support this new feature.
+
+After mesmering the crowd with the lifetimes, Herb gave us some updates on the [meta-classes](https://www.youtube.com/watch?v=4AfRAVcThyA&t=4016s), which were mainly some changes in the syntax.
+While I really appreciate the efforts put into **meta-classes**, I still have doubts that I will enjoy such a feature before I am retiring (roughly in 50 years from now). The lifetimes were much more concrete and fathomable when it comes to my daily C++ life.  
+
+### Better C++ using Machine Learning on Large Projects - Nicolas Fleury and Mathieu Nayrolles - 💀 ★:
+
+- Slides: [link](https://github.com/CppCon/CppCon2018/blob/master/Presentations/better_cpp_using_machine_learning_on_large_projects/better_cpp_using_machine_learning_on_large_projects__nicolas_fleury_mathieu_nayrolles__cppcon_2018.pdf)
 - Video: [coming soon]()
 
-Three skulls, three stars, nothing unusual when it comes to my judgement on **Louis Dionne's** talks. 
+You can certainely rely on C++ to improve your AI projects, but can you use an AI or machine learning to improve your C++ project?
+The two "cousin-frenchies" **Nicolas** and **Mathieu** had the smart idea to detect bugs in pull-requests using some kind of machine learning.
+The idea of doing so, is both scary and .
 
-### [Keynote] Thoughts on a More Powerful and Simpler C++ (5 of N) - Herb Sutter:
+I am far from being an expert when it comes to these domains so I will be brief on that presentation.
+Pain from the false negative, human aspect of it.
+I am far from 
 
-Implementing the C++ Core Guidelines’ Lifetime Safety Profile in Clang Matthias Gehre • Gabor Horvath
-
-
-### Better C++ using Machine Learning on Large Projects - Nicolas Fleury and Mathieu Nayrolles:
 
 ### Class Template Argument Deduction for Everyone - Stephan T. Lavavej:
 
@@ -314,8 +401,3 @@ Implementing the C++ Core Guidelines’ Lifetime Safety Profile in Clang Matthia
 
 ### Spectre: Secrets, Side-Channels, Sandboxes, and Security - Chandler Carruth - :
 
-
-
-
-
- 
