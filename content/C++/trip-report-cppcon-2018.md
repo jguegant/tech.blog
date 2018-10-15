@@ -387,17 +387,79 @@ While I really appreciate the efforts put into **meta-classes**, I still have do
 - Video: [coming soon]()
 
 You can certainely rely on C++ to improve your AI projects, but can you use an AI or machine learning to improve your C++ project?
-The two "cousin-frenchies" **Nicolas** and **Mathieu** had the smart idea to detect bugs in pull-requests using some kind of machine learning.
-The idea of doing so, is both scary and .
+The two "cousin-frenchies" **Nicolas** and **Mathieu** had the smart idea to detect bugs in pull-requests using some kind of machine learning by analysing previous issues in their code-base.
 
-I am far from being an expert when it comes to these domains so I will be brief on that presentation.
-Pain from the false negative, human aspect of it.
-I am far from 
+The presentation did not contain much of actual C++ code, but was more focused on the process they invented to automatically fetch, analyse and post feedback on any submitted code.
+I am not an expert on these topics and would not dare to emit any comment on what they presented us.
+It seems that after training, the classifying algorithm they put in place was able to predict with a success rate of 70% whether a piece of code would have a negative impact or not.
+Their next step would be to add some automatic code correction facilities by applying machine learning on the fixed cases.
+Triple A games tend to reuse a lot of variations of the same code across multiple titles, WITHOUT actually sharing it (new games are just cloned from old ones). With this process in place, the projects are spreading the awareness of some issues very easily. It seems like a huge time saver.
 
+In any case, it was a breeze to attend a slightly less C++ oriented talk.
+There was a lot of questions regarding the human aspect of that technology.
+Is 70% of success rate high enough not to piss-off the users experimenting with the bot?
+My experience is that a lot of false positive in a linter, will invariably make people turn it off at earliest opportunity...
+Would you be able to spot the bad programmers in your team with such a tool? Thanksfully, the labor rights in Canada (Montréal) should protect the employees on that topic...
+And many other interesting facts that you can discover in the video.
 
-### Class Template Argument Deduction for Everyone - Stephan T. Lavavej:
+### Class Template Argument Deduction for Everyone - Stephan T. Lavavej - 💀💀 ★★:
 
-### The Bits Between the Bits: How We Get to main() - Matt Godbolt:
+- Slides: [link](https://github.com/CppCon/CppCon2018/blob/master/Presentations/class_template_argument_deduction_for_everyone/class_template_argument_deduction_for_everyone__stephan_t_lavavej__cppcon_2018.pdf)
+- Video: [coming soon]()
 
-### Spectre: Secrets, Side-Channels, Sandboxes, and Security - Chandler Carruth - :
+[Class Template Argument Deduction](https://en.cppreference.com/w/cpp/language/class_template_argument_deduction), also known as CTAD, is new tiny feature added into the C++17.
+While not being an amazing game changer, CTAD can been seen as some very tasty syntaxic sugar that avoid you to specific the template argument of a class template when instiating it.
+In other simpler words: it can avoid you to call **make_xxx** function when there is enough information for the compiler to deduce the template paramters of a class template.
+Here it what the CTAD lipstick looks like on [std::pair](https://en.cppreference.com/w/cpp/utility/pair):
+```c++
+// Before C++17:
+std::pair<int, const char*> p1 = {42, "test"};
+auto p2 = std::make_pair(42, "test");
+
+// After C++17, with CTAD:
+std::pair p3 = {42, "test"}; // No needs to specify the template argument "int" and "const char*".
+auto p4 = std::pair(42, "test"); // Another way to construct following the always auto rule.
+```
+
+In many instances, you do not have to update your class template to benefit from CTAD.
+But when you do, one must understand how to help the compiler using some deduction guides.
+**STL**'s (known as Stephan T. Lavavej) dedicated and still dedicate his life to maintain the **STL** (also known as Standard Template Library) for MSVC.
+**Stephan** apparently had a first hand experience on the deduction guides when adding CTAD to the standard containers in the STL and wanted to explain the gist of it.
+
+Deduction guides are "pseudo-constructors" declared out of the targeted class, that are evaluated right before going to the steps of template parameter deduction, substitution and all the subsequent mess.
+When instantiating a given class, all the deduction guides follow the overload resolution and template argument deduction rules that you would expect if applied on normal functions.
+The return type of the chosen deduction guide, will be the one used for by the following steps.
+Now this sounds very wordy, but it is actually fairly trivial to write:
+
+```c++
+template <class T> 
+struct foo			// A trivial class template.	
+{
+	foo(T&& t) {}	// Do something with t...
+};
+
+template <class T>
+foo(T t) -> foo<T&>; // Declare a deduction guide: given a type T, I will help to deduce a foo with a first parameter being a reference to this type T. 
+
+int a = 42;
+auto bar = foo(a); // Bar will be foo<int&> thanks to the CTAD and this deduction guide.
+```
+
+I chose this example as it has two interesting tidbits. First you will notice that I apply a transformation on **T** in the return type: the template parameter becomes a **T\***.
+It turns out that you can do a lot more in this place: you can invoke <s>satan</s> some traits or inject a SFINAE expression (Oh my...! I really have to push that idea further).
+The second unexpected part is that my guide does not have the same signature as my constructor. Indeed, one takes T as an r-value reference, the other one by value.
+That's really fortunate, unlike the **make_xxx** functions which would take universal references and [decay](https://en.cppreference.com/w/cpp/types/decay) the arguments, the deductions guides can rely on the automatic decaying of template parameters taken by value. **Stephan** has a lot more of nitty-gritty details on how **deduction guides** behave and it would take a full a post to explain some of them!
+
+### The Bits Between the Bits: How We Get to main() - Matt Godbolt - 💀💀 ★★★:
+
+- Slides: [link](https://github.com/CppCon/CppCon2018/blob/master/Presentations/better_cpp_using_machine_learning_on_large_projects/better_cpp_using_machine_learning_on_large_projects__nicolas_fleury_mathieu_nayrolles__cppcon_2018.pdf)
+- Video: [coming soon]()
+
+Your linker is made off a pseudo-language *à la* make. 
+LD_DEBUG
+
+# Conclusion:
+
+Would I have infinite time and knowledge,  There was a  
+- Spectre: Secrets, Side-Channels, Sandboxes, and Security - Chandler Carruth - :
 
