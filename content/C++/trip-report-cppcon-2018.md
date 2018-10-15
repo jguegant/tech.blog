@@ -448,18 +448,41 @@ auto bar = foo(a); // Bar will be foo<int&> thanks to the CTAD and this deductio
 I chose this example as it has two interesting tidbits. First you will notice that I apply a transformation on **T** in the return type: the template parameter becomes a **T\***.
 It turns out that you can do a lot more in this place: you can invoke <s>satan</s> some traits or inject a SFINAE expression (Oh my...! I really have to push that idea further).
 The second unexpected part is that my guide does not have the same signature as my constructor. Indeed, one takes T as an r-value reference, the other one by value.
-That's really fortunate, unlike the **make_xxx** functions which would take universal references and [decay](https://en.cppreference.com/w/cpp/types/decay) the arguments, the deductions guides can rely on the automatic decaying of template parameters taken by value. **Stephan** has a lot more of nitty-gritty details on how **deduction guides** behave and it would take a full a post to explain some of them!
+That's really fortunate, unlike the **make_xxx** functions which would take universal references and [decay](https://en.cppreference.com/w/cpp/types/decay) the arguments, the deductions guides can rely on the automatic decaying of template parameters taken by value. **Stephan** has a lot more of nitty-gritty details on how **deduction guides** behave and it would take a full a post to explain some of them, just watch his talk instead!
 
 ### The Bits Between the Bits: How We Get to main() - Matt Godbolt - 💀💀 ★★★:
 
-- Slides: [link](https://github.com/CppCon/CppCon2018/blob/master/Presentations/better_cpp_using_machine_learning_on_large_projects/better_cpp_using_machine_learning_on_large_projects__nicolas_fleury_mathieu_nayrolles__cppcon_2018.pdf)
+- Slides: [coming soon]()
 - Video: [coming soon]()
 
-Your linker is made off a pseudo-language *à la* make. 
-LD_DEBUG
+**Matt Godbolt**, author of the amazing website [godbolt.org](https://godbolt.org/), has a very pedagogic mindset and is a naturally gifted speaker (if you ever wanted to understand the [Meltdown Attack](https://meltdownattack.com/), you should make a detour on his [YouTube video](https://www.youtube.com/watch?v=IPhvL3A-e6E&t=692s) and come back to this blog post afterwards).
+This time **Matt** wanted us to have a closer look at the hidden steps from the linking stage of your build until the beggining of the execution of your main entry point.
+More precisely, how your linker select the symbols that will appear into your application and which are the mechanisms that allow the creation of global variables right before entering **main**. 
+
+Being didactic as usual, **Matt** did some live debugging sessions, using GDB, objdump, readelf and such, to make us conceive how things work under the hood.
+It covered the sections you can find within an application (.data, .text, ...), the [One Definition Rule](https://en.wikipedia.org/wiki/One_Definition_Rule) (ODR), the linker's gathering of informations, the mysterious **__static_initialization_and_destruction_0** and its associates... His approach of solving one problem at a time using simple tools make it very easy to comprehend fully what is going on in there. 
+
+I made two discoveries during that one hour debugging session:
+
+- LD, the GNU linker (and very likely clang's one too) uses a [scripting language](https://sourceware.org/binutils/docs/ld/Scripts.html) to define the rules for each section of your binary. I wish to neverhave to dabble in this language for work purpose. 
+- [ld.so](http://man7.org/linux/man-pages/man8/ld.so.8.html), the GNU dynamic linker reacts on an environment variable called **LD_DEBUG**. By setting this variable to =all (or something more precise), the dynamic linker will output all operations and some extra info when loading a dynamic library. It is very convenient if you want to know which libraries get loaded by your process, which symbols it will use, etc... Here is what the output would look like if your process is somehow fetching [getenv](http://man7.org/linux/man-pages/man3/getenv.3.html):
+```text
+     15257:	binding file wc [0] to /lib/x86_64-linux-gnu/libc.so.6 [0]: normal symbol `getenv' [GLIBC_2.2.5]
+     15257:	symbol=abort;  lookup in file=wc [0]
+     15257:	symbol=abort;  lookup in file=/lib/x86_64-linux-gnu/libc.so.6 [0]
+```
+Here we know the **getenv** resides within the libc.so library which is the C runtime library.
+
+### [Other]:
+
+Sadly, I would need to (std::)allocate myself a lot of more time to be able to cover all the goodies you can get from this **CppCon**.
+I have watched many different talks and had great echoes from some others. Here is what I would consider worth to google for:
+- Spectre: Secrets, Side-Channels, Sandboxes, and Security - by Chandler Carruth
+- The Nightmare of Initialization in C++ - by Nicolai Josuttis
+- The Salami Method for Cross Platform Development - by Adi Shavit
+- Compile Time Regular Expressions - by Hana Dusíková
+- And many more...
 
 # Conclusion:
-
-Would I have infinite time and knowledge,  There was a  
-- Spectre: Secrets, Side-Channels, Sandboxes, and Security - Chandler Carruth - :
+The week I spent fully immersed in C++ was really special! A bunch of passionated and dedicated persons can build really great events. Hopefully, I will be able to join in denver next year or the year after, maybe as **speaker** this time (I should not stay a simple lurker forever ;))! If not, be sure to find me at some other C++ conferences in Europe (Meeting C++, C++ On Sea...) or some local meetup groups, this community is trully amazing.
 
