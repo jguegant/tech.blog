@@ -5,7 +5,7 @@ Tags: C++, event, cppcon
 Slug: trip-report-cppcon-2018
 
 New year, new conference! 
-This time, my employer ,[King](https://discover.king.com/about/), helped me to organize a first pilgrimage to [CppCon](https://cppcon.org/) for me and another colleague.
+This time, my employer, [King](https://discover.king.com/about/), helped me to organize a first pilgrimage to [CppCon](https://cppcon.org/) for me and another colleague.
 You cannot fathom how enthusiastic I was to finally making it there!
 Although I might be a bit late on the "trip-report-race", I think that it is still worth to relate my overall experience of the event and then move onto a list of recommended talks you should watch-out on Youtube. 
 
