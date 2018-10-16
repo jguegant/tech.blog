@@ -4,10 +4,9 @@ Modified: 23:09 10-07-2018
 Tags: C++, event, cppcon 
 Slug: trip-report-cppcon-2018
 
-
 New year, new conference! 
-This time, my employer [King](https://discover.king.com/about/) helped me to organize a first pilgrimage to [CppCon](https://cppcon.org/) for me and another colleague.
-You can fathom how enthusiastic I was to finally making it there!
+This time, my employer ,[King](https://discover.king.com/about/), helped me to organize a first pilgrimage to [CppCon](https://cppcon.org/) for me and another colleague.
+You cannot fathom how enthusiastic I was to finally making it there!
 Although I might be a bit late on the "trip-report-race", I think that it is still worth to relate my overall experience of the event and then move onto a list of recommended talks you should watch-out on Youtube. 
 
 # About CppCon (2018):
@@ -17,7 +16,7 @@ Although I might be a bit late on the "trip-report-race", I think that it is sti
 
 **CppCon** is the most renowned conference for all the C++ afficionados. So far held anually in the cozy city center of Bellevue, Washington (or less precisely somewhere close-by to Seattle for those like me that are not into north-american geography), **CppCon** let you explore the **C++** world with various talks, keynotes and other activities provided by some accomplished members of the community. The event is usually happening at the end of September and lasts 5 days, or even more for those attending the training sessions. The program is really plentiful and you would need to watch presentations from 8.00am to 10.00pm, have an ubiquity capacity to be simultaneously in 6 rooms at the same time, and have infinite memory to be able to absorbe all the C++ knowledge flowing during these days.
 
-Do not get me wrong, while the conference is impressive when it comes to the amount of content, that do not imply that this content is out of the reach of the commoners. On one hand you have hairy topics like "Compile-time programming" being discussed, and on the other hand you have acces to gentle introductions to some features of the language. Dedicated or novice C++ users will appreciate as much the conference but for different reasons. A novice will bring back home a lot of new keywords/concepts to plunge into. Someone who follow C++ news, may not make as many discoveries at **CppCon** than at [CppNow](http://cppnow.org/), but she/he will gain a lot of inspiration/motivation from other C++ fellows and will be exposed to other point of views on the language.
+Do not get me wrong, while the conference is impressive when it comes to the amount of content, that does not imply that this content is out of the reach of the commoners. On one hand you have hairy topics like "Compile-time programming" being discussed, and on the other hand you have acces to gentle introductions to some features of the language. Dedicated or novice C++ users will appreciate as much the conference but for different reasons. A novice will bring back home a lot of new keywords/concepts to plunge into. Someone who follow C++ news, may not make as many discoveries at **CppCon** than at [CppNow](http://cppnow.org/), but she/he will gain a lot of inspiration/motivation from other C++ fellows and will be exposed to other point of views on the language.
 
 <center><img width=50% height=50% src="{filename}/images/bellevue.jpg"/></center>
 
@@ -131,7 +130,7 @@ Which would give us the following much more accurate error message:
 <source>:1:33: note: the required expression 'a.print()' would be ill-formed
 ``` 
 Some sceptical gurus will tell you that this can be emulated with some witch-crafted [SFINAEs]({filename}../C++/sfinae-introduction.md). 
-Concepts were not christmas wish-list for **C++**, but I have to admit that Bjarne's talk hipped me a lot! 
+Concepts were not on my christmas wish-list for **C++** this year, but I have to admit that Bjarne's talk hipped me a lot! 
 
 ### [Talk] How to Write Well-Behaved Value Wrappers - Simon Brand - 💀💀💀 ★★:
 
@@ -144,7 +143,7 @@ You may not know what is a value wrapper, but I surely bet that you already mani
 
 It might be a breeze to work with most of these wrappers (certainely not you verbose [std::variant](https://en.cppreference.com/w/cpp/utility/variant)), but the poor souls writting implementations of these must go to great lengths to make them behave as they should. Value wrappers, as their name imply, try to mimic as closely as possible the type of a given value. All the types have some basic properties: can it be explicitely constructed? Are the [special member functions](https://en.wikipedia.org/wiki/Special_member_functions) noexcept? Can it be called in a constant expression? Can it be compared? And much more... A wrapper must react exactly in the same way when it comes to these properties. 
 
-In this talk, Simon compares the old fashioned way to tackle these issues and present how it will look like as soon as the concepts and bunch of other proposals arrive in C++20:
+In this talk, Simon compares the old fashioned way to tackle these issues and present how it will look like as soon as the concepts and a bunch of other proposals arrive in C++20:
 
 - Explicit operator akin to the noexcept operator
 - [P0748R0](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0848r0.html) to use **concepts-based require clauses** on these member functions to enable or disable them. A.K.A goodbye a lot of uncessarry conditional inheritance. 
@@ -164,9 +163,9 @@ So here I was, ready to learn more about these mystical beasts!
 
 **Allocators** in C++ are rather infamous for their over-engineered interface, which is not useful 99.42% of the time. This even forced the committee to come-up, in **C++17**, with a lighter interface called [PMR](https://youtu.be/v3dz-AKOVL8). But this time, the good old full-blown interface found a very clever usage in Bob's hands. Indeed, [std::allocator_traits](https://en.cppreference.com/w/cpp/memory/allocator_traits) has a nice type property **pointer**. Which means that the Standard offers a nice [customization point](https://quuxplusone.github.io/blog/2018/03/19/customization-points-for-functions/) to switch normal pointers **T\*** for a given allocator to a type that acts like a pointer would. These wanna-be pointers are what you call **fancy pointers**. Somehow, you can think of **fancy pointers** as more generalized concept of [smart pointers](https://en.wikipedia.org/wiki/Smart_pointer).   
 
-Now let's say that you would like to serialise to / deserialise from binary a container-like object (vector, list...) with a bunch of [trivial objects](https://msdn.microsoft.com/en-us/library/mt767760.aspx?f=255&MSPPError=-2147217396) inside and send it through a network. Providing that you are targeting one and only one architecture, which is often the case for servers, you may be able to use [std::memcpy](https://en.cppreference.com/w/cpp/string/byte/memcpy) to transfer the representation of this container into a **char\*** buffer. Then, the whole buffer can be wired to another machine. At the endpoint, to deserialise the container from that buffer you can re-use **std::memcpy** to copy back the binary representation into a container ([note that you cannot rely reinterpret_cast in C++ for that purpose](https://www.reddit.com/r/cpp/comments/5fk3wn/undefined_behavior_with_reinterpret_cast/)...). This will work smoothly as long as none of the stored PODs have pointers as members referencing each others! Indeed, pointers are usually not valid as soon as you cross the boundary of a process or a machine. This huge drawback can be avoided by introducing **fancy pointers** to your code-base. 
+Now let's say that you would like to serialise to / deserialise from binary a container-like object (vector, list...) with a bunch of [trivial objects](https://msdn.microsoft.com/en-us/library/mt767760.aspx?f=255&MSPPError=-2147217396) inside and send it through a network. Providing that you are targeting one and only one architecture, which is often the case for servers, you may be able to use [std::memcpy](https://en.cppreference.com/w/cpp/string/byte/memcpy) to transfer the representation of this container into a **char\*** buffer. Then, the whole buffer can be wired to another machine. At the endpoint, to deserialise the container from that buffer you can re-use **std::memcpy** to copy back the binary representation into a container ([note that you cannot rely reinterpret_cast in C++ for that purpose](https://www.reddit.com/r/cpp/comments/5fk3wn/undefined_behavior_with_reinterpret_cast/)...). This will work smoothly as long as none of the stored PODs have pointers as members referencing each others! Pointers are usually not valid as soon as you cross the boundary of a process or a machine. This huge drawback can be avoided by introducing **fancy pointers** to your code-base. 
 
-For instance, Bob brings **offset_ptr** to the table, which permits to express some reference between two elements using their distance from each others:
+As an example on how to fix that issue, Bob brings **offset_ptr** to the table, which permits to express some reference between two elements using their distance from each others:
 ```
 struct obj
 {
@@ -228,7 +227,7 @@ A foo() {
 In the worst case scenario, if the object has no move-constructor, the compiler might resort to use the copy constructor, which could have been avoided with RVO.
 
 
-Now in the **C++ land** nothing really holds true if you look closer at some corner cases. And "no-move-on-return-values" rule mentioned right above can be debated for that reason. Arthur was valiant enough to inquire into this topic and found few cases where a call to **std::move** will BE an optimization. Notably, if you return a value with a type convertible to the function's return type thanks to an [explicit conversion operator](https://en.cppreference.com/w/cpp/language/cast_operator), you should apply **std::move**. Arthur introduced a new warning in clang [-Wreturn-std-move](https://reviews.llvm.org/D43322) to avoid this pitfall. I will gadly turn that warning on as soon as I can.
+Now in the **C++ land** nothing really holds true if you look closer at some corner cases. And the "no-move-on-return-values" rule mentioned right above can be debated for that reason. Arthur was valiant enough to inquire into this topic and found few cases where a call to **std::move** will BE an optimization. Notably, if you return a value with a type convertible to the function's return type thanks to an [explicit conversion operator](https://en.cppreference.com/w/cpp/language/cast_operator), you should apply **std::move**. Arthur introduced a new warning in clang [-Wreturn-std-move](https://reviews.llvm.org/D43322) to avoid this pitfall. I will gadly turn that warning on as soon as I can.
 
 I liked the talk for delving into such precise topics ; although, Arthur rushed on quite a few slides and even skipped a whole bunch of them, meaning that there was more to say on this theme. 
 
@@ -292,14 +291,14 @@ sml::sm connection = []{
 ```
 
 **Boost.DI** is performing very well according to Kris and is on par with the switch solution according to his benchmark.
-**Boost.DI** offers different dispatch strategies to get the current state:  **recursive branching**, [jump table](https://mpark.github.io/programming/2015/07/07/variant-visitation/), [fold expressions](https://en.cppreference.com/w/cpp/language/fold)... It turns out that the **recursive branching** is amongst the fastest yelding results as close as if writing a giant switch by hand. I am not so surprised by these results, since we observed a similar pattern at work with our custom implementation of **std::visit**. As far as I know, **clang** and **gcc** visit their **std::variant** using a **jump table**, which may explain the slight performance drop compared to a giant switch. These are good news though, it means that there is room to improve the Quality of Implementation (QoI) of **std::visit** in our favorite libraries.  
+**Boost.DI** offers different dispatch strategies to get the current state:  **recursive branching**, [jump table](https://mpark.github.io/programming/2015/07/07/variant-visitation/), [fold expressions](https://en.cppreference.com/w/cpp/language/fold)... It turns out that the **recursive branching** is amongst the fastest, yelding results as close as the giant switch strategy. I am not so surprised by these results, since we observed a similar pattern at work with our custom implementation of **std::visit**. As far as I know, **clang** and **gcc** visit their **std::variant** using a **jump table**, which may explain the slight performance drop compared to a giant switch. These are good news though, it means that there is room to improve the Quality of Implementation (QoI) of **std::visit** in our favorite libraries.  
 
 ### [Talk] Compile-time programming and reflection in C++20 and beyond - Louis Dionne - 💀💀💀 ★★★:
 
 - Slides: [coming soon]()
 - Video: [link](https://www.youtube.com/watch?v=CRDNPwXDVp0)
 
-Three skulls, three stars, nothing unusual when it comes to my judgement on **Louis Dionne's** talks. I am very fond (template) meta-programming, and I have always been in awe of Louis's work on [Boost.Hana](https://www.boost.org/doc/libs/1_61_0/libs/hana/doc/html/index.html) and more recently [dyno](https://github.com/ldionne/dyno). This year, he was on stage to give us an overview on what we could expect in the upcomming standards concerning [constexpr](https://en.cppreference.com/w/cpp/language/constexpr), and how this would unlock a better interface for reflection.
+Three skulls, three stars, nothing unusual when it comes to my judgement on **Louis Dionne's** talks. I am very fond of (template) meta-programming, and I have always been in awe of Louis's work on [Boost.Hana](https://www.boost.org/doc/libs/1_61_0/libs/hana/doc/html/index.html) and more recently [dyno](https://github.com/ldionne/dyno). This year, he was on stage to give us an overview on what we could expect in the upcomming standards concerning [constexpr](https://en.cppreference.com/w/cpp/language/constexpr), and how this would unlock a better interface for reflection.
 
 We are slowly but surely reaching the point where we will be able to "allocate" at compile-time and convert most of our code-bases to **constexpr** within a blink. Louis explained what are the necessary changes we need to apply to [constexpr](https://en.cppreference.com/w/cpp/language/constexpr) to be able to use it in expressions where we do allocate:
 
@@ -348,8 +347,8 @@ It might not sound like a thrilling talk... but that would be under-appreciating
 
 
 Lifetimes are some implicit or explicit rules that directly concern the ownership of an object.
-If such lifetime rules are adjusted correctly, your code should be bulletproof when it comes to huge range of bugs related to memory: user after free, dandling pointers...
-Some languages like **Rust** even make it a core concept of the language. Arguably, Herb's lifetimes will be slightly more relaxed (no annotations on everything) and natural to use, at the price of not covering some extreme cases. 
+If such lifetime rules are adjusted correctly, your code should be bulletproof when it comes to a huge range of bugs related to memory: user after free, dandling pointers...
+Some languages like **Rust** even make it a core concept of the language. Arguably, Herb's lifetimes will be slightly more relaxed (no annotations on everything) and more natural to use, at the price of not covering some extreme cases. 
 Let's have a look at what these so-called lifetimes may protect you from:
 
 ```c++
@@ -376,18 +375,18 @@ my_class another_obj = std::move(my_obj);
 my_obj.x->bla = 42; // lifetime warning: using a moved-from obj is seldom a good idea.
 ```  
 All these smart lifetime rules are often based on recommendations that you may find in [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines).
-Having them enforced within your projects is amazing. I am eager to try the clang implementation of it. Later in the day **Matthias Gehre** and **Gabor Horvath** did show us the internals clang that will support this new feature.
+Having them enforced within your projects is amazing. I am eager to try the clang implementation of it. Later in the day **Matthias Gehre** and **Gabor Horvath** did show us the internals of clang that will support this new feature.
 
 After mesmering the crowd with the lifetimes, Herb gave us some updates on the [meta-classes](https://www.youtube.com/watch?v=4AfRAVcThyA&t=4016s), which were mainly some changes in the syntax.
 While I really appreciate the efforts put into **meta-classes**, I still have doubts that I will enjoy such a feature before I am retiring (roughly in 50 years from now). The lifetimes were much more concrete and fathomable when it comes to my daily C++ life.  
 
-### Better C++ using Machine Learning on Large Projects - Nicolas Fleury and Mathieu Nayrolles - 💀 ★:
+### [Talk] Better C++ using Machine Learning on Large Projects - Nicolas Fleury and Mathieu Nayrolles - 💀 ★:
 
 - Slides: [link](https://github.com/CppCon/CppCon2018/blob/master/Presentations/better_cpp_using_machine_learning_on_large_projects/better_cpp_using_machine_learning_on_large_projects__nicolas_fleury_mathieu_nayrolles__cppcon_2018.pdf)
 - Video: [coming soon]()
 
 You can certainely rely on C++ to improve your AI projects, but can you use an AI or machine learning to improve your C++ project?
-The two "cousin-frenchies" **Nicolas** and **Mathieu** had the smart idea to detect bugs in pull-requests using some kind of machine learning by analysing previous issues in their code-base.
+The two "cousin-frenchies" **Nicolas** and **Mathieu** had the smart idea to detect bugs in pull-requests using some kind of machine learning that analyse previously reported issues in their code-base.
 
 The presentation did not contain much of actual C++ code, but was more focused on the process they invented to automatically fetch, analyse and post feedback on any submitted code.
 I am not an expert on these topics and would not dare to emit any comment on what they presented us.
@@ -398,19 +397,19 @@ Triple A games tend to reuse a lot of variations of the same code across multipl
 In any case, it was a breeze to attend a slightly less C++ oriented talk.
 There was a lot of questions regarding the human aspect of that technology.
 Is 70% of success rate high enough not to piss-off the users experimenting with the bot?
-My experience is that a lot of false positive in a linter, will invariably make people turn it off at earliest opportunity...
+My experience is that a lot of false positive in a linter, will invariably make people turn it off at the earliest opportunity...
 Would you be able to spot the bad programmers in your team with such a tool? Thanksfully, the labor rights in Canada (Montréal) should protect the employees on that topic...
 And many other interesting facts that you can discover in the video.
 
-### Class Template Argument Deduction for Everyone - Stephan T. Lavavej - 💀💀 ★★:
+### [Talk] Class Template Argument Deduction for Everyone - Stephan T. Lavavej - 💀💀 ★★:
 
 - Slides: [link](https://github.com/CppCon/CppCon2018/blob/master/Presentations/class_template_argument_deduction_for_everyone/class_template_argument_deduction_for_everyone__stephan_t_lavavej__cppcon_2018.pdf)
 - Video: [coming soon]()
 
 [Class Template Argument Deduction](https://en.cppreference.com/w/cpp/language/class_template_argument_deduction), also known as CTAD, is new tiny feature added into the C++17.
-While not being an amazing game changer, CTAD can been seen as some very tasty syntaxic sugar that avoid you to specific the template argument of a class template when instiating it.
+While not being an amazing game changer, CTAD can been seen as some very tasty syntaxic sugar that avoid you to specific the template argument of a class template when instantiating it.
 In other simpler words: it can avoid you to call **make_xxx** function when there is enough information for the compiler to deduce the template paramters of a class template.
-Here it what the CTAD lipstick looks like on [std::pair](https://en.cppreference.com/w/cpp/utility/pair):
+Here is what the CTAD lipstick looks like on [std::pair](https://en.cppreference.com/w/cpp/utility/pair):
 ```c++
 // Before C++17:
 std::pair<int, const char*> p1 = {42, "test"};
@@ -428,7 +427,7 @@ But when you do, one must understand how to help the compiler using some deducti
 
 Deduction guides are "pseudo-constructors" declared out of the targeted class, that are evaluated right before going to the steps of template parameter deduction, substitution and all the subsequent mess.
 When instantiating a given class, all the deduction guides follow the overload resolution and template argument deduction rules that you would expect if applied on normal functions.
-The return type of the chosen deduction guide, will be the one used for by the following steps.
+The return type of the chosen deduction guide, will be the one used by the following steps.
 Now this sounds very wordy, but it is actually fairly trivial to write:
 
 ```c++
@@ -450,7 +449,7 @@ It turns out that you can do a lot more in this place: you can invoke <s>satan</
 The second unexpected part is that my guide does not have the same signature as my constructor. Indeed, one takes T as an r-value reference, the other one by value.
 That's really fortunate, unlike the **make_xxx** functions which would take universal references and [decay](https://en.cppreference.com/w/cpp/types/decay) the arguments, the deductions guides can rely on the automatic decaying of template parameters taken by value. **Stephan** has a lot more of nitty-gritty details on how **deduction guides** behave and it would take a full a post to explain some of them, just watch his talk instead!
 
-### The Bits Between the Bits: How We Get to main() - Matt Godbolt - 💀💀 ★★★:
+### [Talk] The Bits Between the Bits: How We Get to main() - Matt Godbolt - 💀💀 ★★★:
 
 - Slides: [coming soon]()
 - Video: [coming soon]()
@@ -464,7 +463,7 @@ It covered the sections you can find within an application (.data, .text, ...), 
 
 I made two discoveries during that one hour debugging session:
 
-- LD, the GNU linker (and very likely clang's one too) uses a [scripting language](https://sourceware.org/binutils/docs/ld/Scripts.html) to define the rules for each section of your binary. I wish to neverhave to dabble in this language for work purpose. 
+- LD, the GNU linker (and very likely clang's one too) uses a [scripting language](https://sourceware.org/binutils/docs/ld/Scripts.html) to define the rules for each section of your binary. I wish to never have to dabble in this language for work purpose. 
 - [ld.so](http://man7.org/linux/man-pages/man8/ld.so.8.html), the GNU dynamic linker reacts on an environment variable called **LD_DEBUG**. By setting this variable to =all (or something more precise), the dynamic linker will output all operations and some extra info when loading a dynamic library. It is very convenient if you want to know which libraries get loaded by your process, which symbols it will use, etc... Here is what the output would look like if your process is somehow fetching [getenv](http://man7.org/linux/man-pages/man3/getenv.3.html):
 ```text
      15257:	binding file wc [0] to /lib/x86_64-linux-gnu/libc.so.6 [0]: normal symbol `getenv' [GLIBC_2.2.5]
@@ -477,6 +476,7 @@ Here we know the **getenv** resides within the libc.so library which is the C ru
 
 Sadly, I would need to (std::)allocate myself a lot of more time to be able to cover all the goodies you can get from this **CppCon**.
 I have watched many different talks and had great echoes from some others. Here is what I would consider worth to google for:
+
 - Spectre: Secrets, Side-Channels, Sandboxes, and Security - by Chandler Carruth
 - The Nightmare of Initialization in C++ - by Nicolai Josuttis
 - The Salami Method for Cross Platform Development - by Adi Shavit
@@ -484,5 +484,7 @@ I have watched many different talks and had great echoes from some others. Here 
 - And many more...
 
 # Conclusion:
-The week I spent fully immersed in C++ was really special! A bunch of passionated and dedicated persons can build really great events. Hopefully, I will be able to join in denver next year or the year after, maybe as **speaker** this time (I should not stay a simple lurker forever ;))! If not, be sure to find me at some other C++ conferences in Europe (Meeting C++, C++ On Sea...) or some local meetup groups, this community is trully amazing.
+The week I spent fully immersed in C++ was really special! A bunch of passionated and dedicated persons can build really great events.
+Hopefully, I will be able to join in denver next year or the year after, maybe as a **speaker** this time (I should not stay a simple lurker forever ;))!
+If not, be sure to find me at some other C++ conferences in Europe (Meeting C++, C++ On Sea...) or some local meetup groups, this community is trully amazing.
 
