@@ -48,10 +48,13 @@ Speak about emplace to optimize for constructing and avoid mentioning pair.
 Then bring **try_emplace** as a stronger guaranty that things won't be moved. 
 
 ### The dilemna of map of unique_ptrs:
-### Delaying the memory allocation:
+### Early memory allocation or comparisons:
 
 #### A hacky solution:
 
 #### The results:
 
 ### The missing constructor:
+
+### Conclusion:
+Thanks to my colleague Yo Anes who I had a lot of fun discussing this topics.
