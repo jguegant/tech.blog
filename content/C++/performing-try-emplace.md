@@ -1,6 +1,6 @@
 Title: How to make your maps, try_emplace and unique_ptrs play nicely with each others in C++.
-Date: 14:00 17-11-2018 
-Modified: 14:00 17-11-2018 
+Date: 15:30 18-11-2018 
+Modified: 15:35 18-11-2018 
 Tags: C++17, std::map, std::unordered_map. 
 Slug: performing-try-emplace 
 
