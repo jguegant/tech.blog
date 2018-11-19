@@ -6,7 +6,7 @@ Slug: performing-try-emplace
 
 ## Trivia:
 Lately, I have been working on the reincarnation of a **class** at work: a hash map. 
-While this class had interesting internals (a sort of dense hash map) and performed really well, its interface was not up to standard both literaly and metaphorically.
+While this class had interesting internals (a sort of dense hash map) and performed really well, its interface was not up to standard both literally and metaphorically.
 After much of lipstick applied to it, the **class** now fully mimic the interface of the beloved [std::unordered_map](https://en.cppreference.com/w/cpp/container/unordered_map) from the standard library.
 A close look on `std::unordered_map` and its sister [std::map](https://en.cppreference.com/w/cpp/container/map) reveals few interesting design choices.
 Combining this interface with some smart pointer types can present some challenges to squeeze performance out of your maps.
