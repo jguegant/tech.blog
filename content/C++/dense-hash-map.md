@@ -8,7 +8,7 @@ Status:
 ## Trivia:
 If C++ had an equivalent in the video game world, it would be similar to Dark Souls: a dark, violent, punishing game.
 Yet, the emotion you get after successfully assimilating all the moves required to overcome a challenge is absolutely impossible to replicate.
-You are able to replicate a sort of dance to defeat any boss in your way.
+You are able to reproduce a sort of dance to defeat any boss in your way.
 Speaking of which... what could be the final boss of C++?
 According to [Stephan T. Lavavej (STL)](https://twitter.com/stephantlavavej) this would be the [Floating-Point charconv of the C++17's standard](https://cppcon2019.sched.com/event/Sft8/floating-point-charconv-making-your-code-10x-faster-with-c17s-final-boss).
 While I wouldn't be able to beat this boss by myself, I can tackle a smaller boss: making a standard-compatible `unordered_map` from scratch.
