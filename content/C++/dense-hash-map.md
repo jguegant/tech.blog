@@ -11,7 +11,7 @@ Yet, the emotion you get after successfully assimilating all the moves required 
 You are able to reproduce a sort of dance to defeat any boss in your way.
 Speaking of which... what could be the final boss of C++?
 According to [Stephan T. Lavavej (STL)](https://twitter.com/stephantlavavej) this would be the [Floating-Point charconv of the C++17's standard](https://cppcon2019.sched.com/event/Sft8/floating-point-charconv-making-your-code-10x-faster-with-c17s-final-boss).
-While I wouldn't be able to beat this boss by myself, I can tackle a smaller boss: making a standard-compatible `unordered_map` from scratch.
+While I wouldn't be able to beat this boss by myself anytime soon, I can tackle a tiny boss: making a standard-compatible `unordered_map` from scratch.
 I would like to share with you how to beat this smaller boss by yourself!
 
 <center><img width=35% height=35% src="{filename}/images/dark-souls.webp" alt="Dark Souls"/></center>
@@ -68,7 +68,7 @@ Here we are still keeping a linked-list for each buckets, but all the nodes are 
 Let's call this a **dense hash map.**
 Instead of using pointers between nodes, we are expressing their relations with indexes within the vector: here the node with **key1** store a "next index" having a value of **2** which is the index of the node with **key2**. And all of that is a huge improvement! We are gaining on all fronts:
 - Iterating over all the key/value pairs is as fast as iterating over a vector, which is lightning fast.
-- We are saving a pointer on all nodes - the "prev pointer". We don't need any sort of reverse-traversal of the bucket. 
+- We are saving a pointer on all nodes - the "prev pointer". We don't need any sort of reverse-traversal of a given bucket, but just a global reverse-traversal of all buckets. 
 - We don't need to maintain a begin and end pointer for the list of nodes.
 - Even iterating over a bucket could be faster as the node shouldn't be too scattered in memory since they all belong to one vector.
 
@@ -79,17 +79,72 @@ Instead of a using a `dense_hash_map<Key, Value>`, your user can always use a `d
 
 We are reintroducing pointers, which is obviously not great for the cache again.
 But this time when iterating over all the key/value pairs you will very likely see a substantial improvement over the first layout.
-The pattern of the nodes is clearly more predictable and some sort of prefetching CPU minions may come to your help. 
+The pattern of the nodes is clearly more predictable and prefetching abilities of your CPU may come to your help. 
 
-#### Controlling the growth
+There a lot more layouts for hash tables that I did not mention here and could have suited my needs. 
+For instance, any of the [open-addressing](https://en.wikipedia.org/wiki/Hash_table#Open_addressing) strategies could bring their own pros and cons.
+Once again, if you are interested, there are a pletora of cppcon talks on that subject.
 
+#### Faster modulo operation
+
+As I mentioned previously, a lookup will require that your key is hashed and adjusted with modulo to fit in the amount of buckets available.
+The amount of buckets is changing depending on how many key/value pairs are stored in your map. The more pairs, the more buckets.
+In a `std::unordered_map`, the growth is triggered everytime the [load factor](https://en.cppreference.com/w/cpp/container/unordered_map/load_factor) (average number of elements per bucket) is above a certain [threshold](https://en.cppreference.com/w/cpp/container/unordered_map/max_load_factor).
+Adjusting your hash with a "simple modulo operation" is as it turns out not a trivial operation for your hardware. 
+Let's [godbolt](https://godbolt.org/) a bit!  
+
+If we write a simple modulo function, this is what godbolt gives to us (on GCC 9.0 with -O3):
+```
+// C++
+int modulo(int hash, int bucket_count)
+{
+    return index % size;
+}
+```
+```
+// x86
+modulo(int, int):
+    mov     eax, edi  // Prepare the hash into eax
+    cdq               // Some shenanigans 
+    idiv    esi       // Divide by esi which contains bucket_count
+    mov     eax, edx  // Get the modolu value that ends-up in edx and return it into eax
+    ret
+```
+
+So far things look rather good. The `idiv` operation seems to do most of the work by itself. 
+But, what if we made bucket_count a constant? Having more information at compile-time should help the compiler, isn't it?
+```
+// C++
+int modulo(int hash)
+{
+    return index % 5;
+}
+```
+```
+// x86
+modulo(int, int):
+    movsx   rax, edi
+    mov     edx, edi
+    imul    rax, rax, 1717986919 // LOTS OF SHENANIGANS GOING HERE.
+    sar     edx, 31
+    sar     rax, 33
+    sub     eax, edx
+    lea     eax, [rax+rax*4]
+    sub     edi, eax
+    mov     eax, edi
+    ret
+```
+
+Interesting! The compiler is spitting a lot more operations. Wouldn't it be simpler to keep `idiv` here? A single operation... 
+Believe or not, your compiler is as smart as a whip and wouldn't do this extra work without significant gains.
+So we can clearly extrapolate that our innocent `idiv` must be seriously costly if it happens to be less efficient than a couple of other operations.
+
+Show that power of two work well too :)
 
 ### Design
 No node interface...
 
 
-####
-####
 
 #### Implementation
 
