@@ -71,6 +71,9 @@ Instead of using pointers between nodes, we are expressing their relations with 
 - We are saving a pointer on all nodes - the "prev pointer". We don't need any sort of reverse-traversal of a given bucket, but just a global reverse-traversal of all buckets. 
 - We don't need to maintain a begin and end pointer for the list of nodes.
 - Even iterating over a bucket could be faster as the node shouldn't be too scattered in memory since they all belong to one vector.
+All these new properties have a lot of use-cases in the domains I dabble with.
+For instance, the [ECS (Entity-Component-System) pattern](https://en.wikipedia.org/wiki/Entity_component_system) often demands a container where you can do lookup for a component associated to a given entity and at the same being able to traverse all components in one-shot. 
+
 
 With that said, the **stable addressing** is now gone: any insertion into the vector could produce a reallocation of its internal buffer, ending in a massive move of all the nodes accross memory. So what if your user really need stable addressing? As **David Wheeler** would say: "just use another level of indirection".
 Instead of a using a `dense_hash_map<Key, Value>`, your user can always use a `dense_hash_map<Key, unique_ptr<Value>>`: 
@@ -105,7 +108,7 @@ int modulo(int hash, int bucket_count)
 // x86
 modulo(int, int):
     mov     eax, edi  // Prepare the hash into eax
-    cdq               // Some shenanigans 
+    cdq               // Prepare registers for an idiv operation. 
     idiv    esi       // Divide by esi which contains bucket_count
     mov     eax, edx  // Get the modolu value that ends-up in edx and return it into eax
     ret
@@ -139,7 +142,26 @@ Interesting! The compiler is spitting a lot more operations. Wouldn't it be simp
 Believe or not, your compiler is as smart as a whip and wouldn't do this extra work without significant gains.
 So we can clearly extrapolate that our innocent `idiv` must be seriously costly if it happens to be less efficient than a couple of other operations.
 
-Show that power of two work well too :)
+So how can we optimize this modulo operation without using `idiv` or a constant?
+We can use bitwise operations and restrict ourselves to sizes made of power of two.
+Assuming that `y` is a power of two in the expression `x % y`, we can replace this expression with: `x & (y - 1)`.
+You can think of this bitwise operation as a "filter" on the lower bits of a number, which happen to be the same as a modulo operation when it comes to power of two.
+So what do we obtain in this conditions?
+```
+// C++
+int modulo(int hash, int bucket_count) {
+    return (hash &  (bucket_count - 1));
+}
+```
+```
+// x86
+modulo(int, int):
+    lea     eax, [rsi-1]
+    and     eax, edi
+    ret
+```
+Not only we have substantially less operations, but `lea` (loading from memory) and `and` have much less associated cost than `idiv`.
+This micro-optimisation may look a bit far-fetched, but it actually matters a lot, as proved by [Malte Skarupke](https://www.youtube.com/watch?v=M2fKMP47slQ), when it comes to lookup operations. 
 
 ### Design
 No node interface...
