@@ -2,21 +2,47 @@ Title: Trip report - Meeting C++ 2019
 Date: 23:09 11-18-2019
 Modified: 23:09 11-19-2019
 Tags: C++, event, meetingcpp
-Slug: trip-report-meetingcpp-2017
+Slug: trip-report-meetingcpp-2019
 
 
 Time to go back to the roots!
-Me and quite a few colleagues have been traveling across the old continent to attend the renowned [Meeting C++](https://meetingcpp.com/) conference in Berlin.  
+Me and quite a few colleagues have been travelling across the old continent to attend the renowned [Meeting C++](https://meetingcpp.com/) conference in Berlin.  
 Fully backed by our employer, [King](https://discover.king.com/about/), we were able to enjoy a yearly dose of C++ talks at an excellent venue.
 I was thrilled at the idea of retrying the "German C++ experience" and my expectation were once again met! 
 As the tradition goes, I will relate a bit my experience of the event and dress-up a list of the talks I would highly suggest to search for! 
 
-# About Meeting (2019):
+# A tour of Meeting (2019):
 
-## The event:
+I did a decent [introduction of the event two years ago]({filename}../C++/trip-report-meetingcpp.md) and most of it stand true.
+So rather than doing another summary, I will compare and contrast my experience at **Meeting C++** with the one I had last year at **Cppcon**. 
 
+## The venue:
 
-# My experience over there:
+When it comes to the facilities of the venue, I found the rooms in the Andels Hotel to have unequal quality.
+While the two big rooms on the lower floors are excellent, the upper floor ones are really long and narrow. 
+If the nature made you of a short stature or you don't have the best eyesight, you will have a hard time following some of the slides.
+I cannot remember having any issue with that at **CppCon**. Having a rooms with inclined rows helps a lot!
+Probably to avoid having crammed rooms and irritating noises, **Meeting C++** also has this concept of closing doors of the tracks as soon as the talk starts and not letting annoying enter. I am not quite convinced by this idea, it extremely frustrating to not be able to move to another talk if the current one is not to your taste.
+
+## The German cuisine:
+
+Being French, an important detail comes to my mind is... food!
+Unlike **CppCon**, this event offers catering all day long, and tasty one mind you. 
+Obviously you cannot expect conference meals to deserve a [Michelin stars's](https://en.wikipedia.org/wiki/Michelin), but there was plenty and with a lot of variety. Is that a must-do for a conference? Probably not, but it is both really convenient and it also brings a LOT of interactions between members of the community. People will tend to have more casual conversations if dinning in the same place rather than going out. From what I can recall, **CppCon** provided snacks here and there, but nothing worth remembering.
+
+## The talks:
+
+Last but not least, the speakers! On one hand, **Meeting C++** has more diversity: the speakers are coming from all around Europe and you may discover a lot of new names and some hidden gems that didn't/wouldn't make it to **CppCon** - not everyone is willing or can afford to travel to the USA. On the other hand, the quality of **CppCon** talks felt a bit higher.
+
+I have had a first hand, albeit short, experience on what it takes to be a speaker at such an event.
+I gave a lightning talk highly inspired on the [performing try emplace post]({filename}../C++/trip-report-meetingcpp.md) I did at the beginning of this year.
+While it went rather smoothly (if not for a small technical issue with my slides), I felt intimidated when I went on stage in front of maybe 300 people (best-guess estimation). 
+
+Having to do a proper presentation in a foreign language in front of a rather im
+
+New lightning talks model, wasn't as relaxed and fun as at **CppCon**.
+
+# A lightning talk: 
 
 <center><img width=50% height=50% src="{filename}/images/cppcon.jpg"/></center>
 
@@ -24,12 +50,12 @@ Enough of my pseudo-rant on an almost perfect event and let's continue with some
 
 # The chief's suggestions of the year:
 
-Once again, here is a menu of most of the talks I particulary enjoyed. The legend follow the same rules:
+Once again, here is a menu of most of the talks I particularly enjoyed. The legend follow the same rules:
 
-- 💀 : The difficulty of the talk (💀: Begginer friendly, 💀💀: Intermediate, 💀💀💀: High exposure to C++'s dark corners)
+- 💀 : The difficulty of the talk (💀: Beginner friendly, 💀💀: Intermediate, 💀💀💀: High exposure to C++'s dark corners)
 - ★ : My interest for the talk (★: Good talk, ★★: Tasty talk, ★★★: Legendary talk)
 
-I promise you not to spoil everything in the talks, but simply try to give an overview of what you can expect within them or some conclusions. Although most of the talks are most likely worth to be seen, I forced my-very-subjective-self to pick very few of them. I have seen people with very different "favorite talk" and you should not feel sad if your own talk is not part of this not-so-prestigious list.
+I promise you not to spoil everything in the talks, but simply try to give an overview of what you can expect within them or some conclusions. Although most of the talks are most likely worth to be seen, I forced my-very-subjective-self to pick very few of them. I have seen people with very different "favourite talk" and you should not feel sad if your own talk is not part of this not-so-prestigious list.
 
 ### [Keynote] Concepts: The Future of Generic Programming (the future is here) - Bjarne Stroustrup - 💀★★★:
 
