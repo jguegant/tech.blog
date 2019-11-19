@@ -26,7 +26,7 @@ Probably to avoid having crammed rooms and irritating noises, **Meeting C++** al
 
 ## The German cuisine:
 
-Being French, an important detail comes to my mind is... food!
+Being French, an important detail often comes to my mind... food!
 Unlike **CppCon**, this event offers catering all day long, and tasty one mind you. 
 Obviously you cannot expect conference meals to deserve a [Michelin stars's](https://en.wikipedia.org/wiki/Michelin), but there was plenty and with a lot of variety. Is that a must-do for a conference? Probably not, but it is both really convenient and it also brings a LOT of interactions between members of the community. People will tend to have more casual conversations if dinning in the same place rather than going out. From what I can recall, **CppCon** provided snacks here and there, but nothing worth remembering.
 
@@ -38,8 +38,16 @@ I have had a first hand, albeit short, experience on what it takes to be a speak
 I gave a lightning talk highly inspired on the [performing try emplace post]({filename}../C++/trip-report-meetingcpp.md) I did at the beginning of this year.
 While it went rather smoothly (if not for a small technical issue with my slides), I felt intimidated when I went on stage in front of maybe 300 people (best-guess estimation). 
 
-Having to do a proper presentation in a foreign language in front of a rather im
+<center><img width=50% height=50% src="{filename}/images/my-lightning-talk-meeting-cpp-2019.jpg"/></center>
 
+You can find a pdf version of the slides right [here]({filename}../images/associative-containers-the-art-of-inserting-gracefully.pdf) and maybe a YouTube record of that talk will pop at one point on the [Meeting C++ channel](https://www.youtube.com/user/MeetingCPP).
+
+Doing a presentation on a innovative topic, interesting and understable by all requires a lot of upfront work.
+Having to do it in a foreign language in front of a rather massive crowd is even more demanding.
+So overall, I am not surprise that the quality is 
+
+
+Simultaneous tracks: Beginner to Advanced.
 New lightning talks model, wasn't as relaxed and fun as at **CppCon**.
 
 # A lightning talk: 
