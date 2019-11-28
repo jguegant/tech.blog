@@ -32,7 +32,14 @@ Obviously you cannot expect conference meals to deserve a [Michelin stars's](htt
 
 ## The talks:
 
-Last but not least, the speakers! On one hand, **Meeting C++** has more diversity: the speakers are coming from all around Europe and you may discover a lot of new names and some hidden gems that didn't/wouldn't make it to **CppCon** - not everyone is willing or can afford to travel to the USA. On the other hand, the quality of **CppCon** talks felt a bit higher.
+Last but not least, the speakers! On one hand, **Meeting C++** has more diversity: the speakers are coming from all around Europe and you may discover a lot of new names and some hidden gems that didn't/wouldn't make it to **CppCon** - not everyone is willing or can afford to travel to the USA. On the other hand, the amount of C++ committee members and famous speakers per square kilometer felt higher at **CppCon** which probably make the talks of a slightly better quality overall.
+
+**Meeting C++** offers you the possibility to go to four different tracks for a given time slot.
+It is enough choices that you will always find a talk to your liking.
+The talks are also explicitely tagged with a level of experience required to enjoy them: beginner to advanced.
+Once again, going only to talks with topics that you like is often not the best strategy to fully enjoy this conference.
+It can be very rewarding to go out of your comfort zone and try a talk not a single word on its title make sense to you. 
+Likewise, do not underestimate the quality of beginner talks. You may learn more than you would expect!
 
 I have had a first hand, albeit short, experience on what it takes to be a speaker at such an event.
 I gave a lightning talk highly inspired on the [performing try emplace post]({filename}../C++/trip-report-meetingcpp.md) I did at the beginning of this year.
@@ -44,17 +51,8 @@ You can find a pdf version of the slides right [here]({filename}../images/associ
 
 Doing a presentation on a innovative topic, interesting and understable by all requires a lot of upfront work.
 Having to do it in a foreign language in front of a rather massive crowd is even more demanding.
-So overall, I am not surprise that the quality is 
 
-
-Simultaneous tracks: Beginner to Advanced.
-New lightning talks model, wasn't as relaxed and fun as at **CppCon**.
-
-# A lightning talk: 
-
-<center><img width=50% height=50% src="{filename}/images/cppcon.jpg"/></center>
-
-Enough of my pseudo-rant on an almost perfect event and let's continue with some more concrete reporting! 
+Speaking of coureagous and talented people, let me give you a run-through of the best talk I ! 
 
 # The chief's suggestions of the year:
 
