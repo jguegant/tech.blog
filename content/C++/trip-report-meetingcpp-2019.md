@@ -335,17 +335,17 @@ The goal is that the compiler should be able to check if two template instantati
 
 ### [Talk] Compile Time Regular Expressions with Deterministic Finite Automaton - Hana Dusíková - 💀💀💀★:
 
-Speaking of template meta-programming and NTTP, [Hana Dusíková](https://twitter.com/hankadusikova) improved her [compile-time regular expression](https://github.com/hanickadot/compile-time-regular-expressions) library. 
+Speaking of template meta-programming, NTTP and strings, [Hana Dusíková](https://twitter.com/hankadusikova) improved her [compile-time regular expression](https://github.com/hanickadot/compile-time-regular-expressions) library. 
 At last year's **CppCon**, Hana impressed the crowd with her library: it exploited template meta-programming in C++17 to its maximum to generate a regex parser at compile-time from a string literal. 
 This makes her library ridiculously performant compared to `std::regex` which works at runtime. Surprisingly, the library does not affect compilation at all. 
 In fact, it improves a lot the compilation time compared to `std::regex`! Does this implies that there is such a thing as "Zero-cost Abstractions"? Maybe...
 
 I have to admit that I was part of the people that missed the chance to see her talk live when I could have...
 So this year, I took my revenge and went to her follow-up talk.
-Using some of the C++20 template features, Hana 
+Using some of the C++20 template features, Hana succeeded to make a new regexp engine using a [Deterministic Finite Automaton](https://en.wikipedia.org/wiki/Deterministic_finite_automaton). Do not ask me to summarise properly what I have witnessed during this talk, it was... complicated!
+But it is also fascinating, it combines a hefty does of meta-programming with language theory: that's a lot of mental stimulation.
 
-I wouldn't dare to explain how things work
-I would probably suggest to watch her initial talk and come to this one afterwards.
+If that sounds fun to you, I would probably suggest to watch her [initial talk](https://www.youtube.com/watch?v=QM3W36COnE4) and come back to this one afterwards.
 
 
 ### [Other]:
