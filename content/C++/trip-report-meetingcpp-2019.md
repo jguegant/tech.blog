@@ -1,6 +1,6 @@
 Title: Trip report - Meeting C++ 2019 
-Date: 23:09 11-18-2019
-Modified: 23:09 11-19-2019
+Date: 22:30 11-29-2019
+Modified: 22:30 11-29-2019
 Tags: C++, event, meetingcpp
 Slug: trip-report-meetingcpp-2019
 
