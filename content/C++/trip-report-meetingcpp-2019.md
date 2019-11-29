@@ -25,7 +25,7 @@ Rather than doing another summary, I will compare and contrast my experience at 
 When it comes to the facilities of the venue, I found the rooms in the Andels Hotel to have unequal quality.
 While the two big rooms on the lower floors are excellent, the upper floor ones are really long and narrow. 
 If the nature made you of a short stature or you don't have the best eyesight (or both like me), you will have a hard time following some of the slides.
-I cannot remember having any issue with that at **CppCon**. Having a rooms with inclined rows helps a lot!
+I cannot remember having any issue with that at **CppCon**. Having rooms with inclined rows helps a lot!
 
 Note: apparently, the organisers are well-aware of this issue and may come up with a nice solution for next round of Meeting C++! 
 
