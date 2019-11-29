@@ -27,7 +27,7 @@ While the two big rooms on the lower floors are excellent, the upper floor ones 
 If the nature made you of a short stature or you don't have the best eyesight (or both like me), you will have a hard time following some of the slides.
 I cannot remember having any issue with that at **CppCon**. Having rooms with inclined rows helps a lot!
 
-Note: apparently, the organisers are well-aware of this issue and may come up with a nice solution for next round of Meeting C++! 
+Note: apparently, the organisers are well-aware of this issue and may come up with a nice solution for the next round of Meeting C++! 
 
 Probably to avoid having crammed rooms and irritating noises, **Meeting C++** also has this concept of closing doors of the tracks as soon as the talk starts and not letting annoying enter. I am not quite convinced by this idea, it extremely frustrating to not be able to move to another talk if the current one is not to your taste. 
 
