@@ -161,8 +161,8 @@ This is really appealing for all projects relying on unit-tests, which is
 **Tina** and **Niel** did a step by step explanation on how to use **libFuzzer** and what are its benefits:
 - How to tweak the random data you receive to valid parameters.
 - How to reuse the best input data corpus to write new unit-tests for your application.
-- Why you can use this to detect very subtle changes in your API's behaviour. Changes that you would not necessarily wrap with unit-tests.
-- ...
+- Why you can use this to detect very subtle changes in your API's behaviour. Changes that you would not necessarily catch with usual unit-tests.
+- A lot more...
 
 I will have a second watch of their talk as soon as their video is available on the conference's Youtube channel.
 It was a very innovative topic to me!
@@ -193,10 +193,15 @@ Wouldn't it be better if compilation units themselves could expose directly what
 This is exactly what modules try to solve!
 
 So writing a very basic module becomes as simple as writing a `.cpp` file with few annotations to expose what we want:
-```
+```c++
 export module my.module; // This is the name of our module
 export int e = 42; // Expose a variable.
-export int bar() { return foo(e); } // Expose a function.
+
+export int bar() { 
+	return foo(e); // Expose a function.
+
+} 
+
 int foo(int x){ return x; } // No export keyword == no exposition.
 ``` 
 
@@ -219,13 +224,128 @@ Except that it gets quite a lot more complicated when you are mixing old header 
 As for performance, she observed an improvement from 1546 milliseconds to 62 milliseconds when using a library as a module on a huge-scale project at work. 
 This give a lot of hope on what modules will offer to us when avaible on all major compilers!
 
-### [Talk] Compile Time Regular Expressions with Deterministic Finite Automaton - Hana Dusíková - 💀💀★:
+### [Talk] C++20 The small things - Timur Doumler - 💀★★:
 
-### [Talk] C++20 The small things - Timur Doumler - :
+- Slides: [link](https://meetingcpp.com/mcpp/slides/2019/talk.pdf)
+- Video: [cppcon link](https://www.youtube.com/watch?v=Xb6u8BrfHjw)
 
-### [Talk] The Dawn of a New Error - Phil Nash - :
+You probably have heard of the major features coming to C++20: concepts, coroutines and modules. And you would think that this is enough on your C++ plate for a few years.
+Well, even without these three features, C++20 still has plenty to offer. This is what [Timur Doumler](https://twitter.com/timur_audio) demonstrated to us for one hour!   
+
+Amongst a pletora of small improvements, here are my favorite so far:
+
+#### Designated initialisers
+
+Let's imagine that you have a `struct` with quite a few members in it. Now let's pretend that we want to initialize this structure with a few variables using the [aggregate initilization from C++11](https://en.cppreference.com/w/cpp/language/aggregate_initialization).
+What are the chances that you assign the correct members from the first try? 
+
+```
+struct my_struct 
+{
+	int a1;
+	int b;
+	int a2;
+	int b2;
+	int b3;
+	int c;
+	// ...
+};
+
+my_struct s{42, 43, 1337, 54, /*...*/};
+``` 
+
+I tell you, the chances are low. You will have to double check the `struct` definition more than once to order things accurately!
+So what if you could specify which member you designate? This is where C++20 comes to save the day:
+
+```
+my_struct s{.a1=42, .b=43, .a2=1337, .b2=54, /*...*/};
+``` 
+
+I can hear YOU the C progammer, this has been in C99 for a while...
+And you will also point with your smug face that you must respect the order (by appearance in the definition) of the members when using C++'s designated initializers unlike C.
+It happens that C++ has much more complicated rules of evaluation than C. Allowing for random order of assignment could be troublesome.
+What this is feature is about is 1) safety 2) a nice way to get autocompletion from your IDE on what member you need to fill in.
+
+#### Improved lambdas
+
+If you want to capture a **parameter pack** within a lambda before C++20, you will have to be [extremely creative](https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope). This is even more frustrating that lambdas are great to combine with templates.
+This very tedious task becomes trivial in C++20:
+
+```c++
+template<class... Args>
+auto foo(Args... args) { 
+	return [...args = std::move(args)]() { 
+		// Do whatever you want with args...
+	}; 
+}
+```
+
+std::mindblowing()! Sprickling a bit of `...` where it should... works as expected!
+
+Lambdas become, in C++20, allowed in an **unevaluated contexts**. What are unevaluated contexts? Whenever you have an expression within a `sizeof(...)` or `decltype`.
+Is that something you would frequently do? Actually yes. Whenever you want a custom deleter for your `std::unique_ptr`:
+
+```c++
+// Before C++20:
+const auto custom_deleter = [](handle* h){ /* Do something with h. */ release(h); }; 
+std::unique_ptr<handle, decltype(custom_deleter)> p;
+
+// Becomes a one liner:
+std::unique_ptr<handle, decltype([](handle* h){ /* Do something with h. */ release(h); })> p;
+```
+
+**Timur** came up with other examples like having a custom comparison template parameter for `std::set`.
 
 
+#### Extended Non-Type Template Parameter (NTTP)
+
+If you are **template meta-programming** (TMP) enthusiast like me, this will be a game changer!
+Right now, the standard only allow integer-like (integer, enumaration, pointers...) and types as template parameter. This is highly restrictive and frustrating at times.
+When pushing template meta-programming to its limit, you will often want to manipulate strings. Right now you will need to decompose your string into `char` that you pass as template arguments.
+
+For instance, these bits of code would never work in **C++17**:
+
+```c++
+
+struct vec2 
+{
+	int x;
+	int y;
+};
+
+template <class T, vec2 V> // error: vec2 - illegal type for non-type template parameter  
+struct my_struct 
+{
+	std::array<std::array<T, V.y>, V.x> bla;
+};
+
+
+template <std::string InitValue> // error: std::string - illegal type for non-type template parameter  
+struct my_struct2
+{
+	std::string s = InitValue;	
+};
+
+```
+
+Good news! This restrictions have been lifted as long as your **non-type template parameter**'s type (I know the usage of "type" twice here is confusing):
+1) Has a comparison operator available (`operator==`) at compile time: it is constexpr.
+The goal is that the compiler should be able to check if two template instantations are the same by checking if all template parameters are equivalent. 
+2) Can be constructed at compile-time: its construction can be done in a constexpr context.
+
+### [Talk] Compile Time Regular Expressions with Deterministic Finite Automaton - Hana Dusíková - 💀💀💀★:
+
+Speaking of template meta-programming and NTTP, [Hana Dusíková](https://twitter.com/hankadusikova) improved her [compile-time regular expression](https://github.com/hanickadot/compile-time-regular-expressions) library. 
+At last year's **CppCon**, Hana impressed the crowd with her library: it exploited template meta-programming in C++17 to its maximum to generate a regex parser at compile-time from a string literal. 
+This makes her library ridiculously performant compared to `std::regex` which works at runtime. Surprisingly, the library does not affect compilation at all. 
+In fact, it improves a lot the compilation time compared to `std::regex`! Does this implies that there is such a thing as "Zero-cost Abstractions"? Maybe...
+
+I have to admit that I was part of the people that missed the chance to see her talk live when I could have...
+So this year, I took my revenge and went to her follow-up talk.
+Using some of the C++20 template features, Hana 
+
+I wouldn't dare to explain how things work
+I would probably suggest to watch her initial talk and come to this one afterwards.
 
 
 ### [Other]:
