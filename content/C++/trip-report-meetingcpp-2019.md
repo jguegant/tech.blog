@@ -190,7 +190,7 @@ The problem is that header files are:
 1) Shared in a very primitive way. The `#include` directive is doing dumb copy-paste of the header content into your cpp file.
 2) Often full of complicated content for the compiler and not just few declarations. In those, you can have macros, templates, inline functions, include of includes... 
 
-This result in your compiler doing a lot of unnecessary work parsing these headers for all the compilation units. 
+This results in your compiler doing a lot of unnecessary work parsing these headers for all the compilation units. 
 Wouldn't it be better if compilation units themselves could expose directly what they provide instead of using these hackish headers?
 This is exactly what modules try to solve!
 
@@ -224,7 +224,7 @@ Except that it gets quite a lot more complicated when you are mixing old header 
 **Daniela** was really good at explaining all these quirks that you may encounter in the rough transition that will happen from headers to modules.
 
 As for performance, she observed an improvement from 1546 milliseconds to 62 milliseconds when using a library as a module on a huge-scale project at work. 
-This give a lot of hope on what modules will offer to us when available on all major compilers!
+This gives a lot of hope on what modules will offer to us when available on all major compilers!
 
 ### [Talk] C++20 The small things - Timur Doumler - 💀★★:
 
@@ -330,7 +330,7 @@ struct my_struct2
 
 ```
 
-Good news! This restrictions have been lifted as long as your **non-type template parameter**'s type (I know the usage of "type" twice here is confusing):
+Good news! These restrictions have been lifted as long as your **non-type template parameter**'s type (I know the usage of "type" twice here is confusing):
 
 - 1) Has a comparison operator available (`operator==`) at compile time: it is **constexpr**.
 The goal is that the compiler should be able to check if two template instantiations are the same by checking if all template parameters are equal. 
