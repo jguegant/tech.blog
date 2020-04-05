@@ -5,7 +5,15 @@ Tags: C++20, hash map.
 Slug: dense-hash-map 
 Status: draft
 
+This post is part of a planned serie of posts:
+- Part 1 - Beating std::unordered_map (Current)
+- Part 2 - Structuring our code (Coming Soon)
+- Part 3 - ... (Coming Soon)
+
+# Part 1 - Beating std::unordered_map
+
 ## Trivia:
+
 If C++ had an equivalent in the video game world, it would be similar to Dark Souls: a dark, violent, punishing game.
 Yet, the emotion you get after successfully assimilating all the moves required to overcome a challenge is absolutely impossible to replicate.
 You are able to reproduce a sort of dance to defeat any boss in your way.
@@ -18,10 +26,13 @@ I would like to share with you how to beat this smaller boss by yourself!
 
 Disclaimer: there are lot of extremely talented people (abseil team with their Swiss Tables, Malte Skarupke's flat hash map...) 
 that have been researching for years how to make the quintessence of an associative container.
-While the one I am presenting here has really decent performance (more so than the standard ones at least), it is not bleeding-edge.
-I encourage you to read this post as an introduction to the wonderful world of hash maps then explore a bit more what these talented people have produced recently.
+While the one I am presenting here has a really decent performance (more so than the standard ones at least), it is not bleeding-edge.
+On the other hand, its design is fairly simple to explain and easy to maintain.
 
-### Freeing ourselves from the standard constraints:
+I encourage you to read this post as an introduction to the wonderful world of hash maps and the ways of the standard. You can find the code for the hash-map I am describing thorough this serie of posts [right here](https://github.com/Jiwan/dense_hash_map).
+Hopefully when you are done reading this serie, you will be ready to explore a bit more what the talented people in the C++ community have produced recently.
+
+## Freeing ourselves from the standard constraints:
 
 Implementing a standard associative container like `std::unordered_map` wouldn't be satisfying enough.
 We have to do better! Let's make a faster one! 
@@ -31,9 +42,9 @@ You would think that the people working on an implementation of it (libc++, libs
 So how could we beat them in their own domain? Well... we are going to cheat... but in a good way.
 The standard library is made to be used by the commoners.
 The noble ladies and gentlemen in the standard committee instored some constraints to protect us from killing ourselves while using their `std::unordered_map`. 
-May this over-protective behaviour be damned! We know better! 
+May this over-protective behaviour be damned! We know better!
 
-#### Breaking stable addressing
+### Breaking stable addressing
 
 The standard implicitely mandates **stable addressing** for any implementation of `std::unordered_map`.
 **Stable addressing** means that the insertion or deletion of a **key/value pair** in a `std::unordered_map` should not affect the memory location of other **key/value** pairs in the same `std::unordered_map`. More precisely, the standard does not mention, in the [Effects](https://eel.is/c++draft/unord.map.modifiers) sections of std::unordered_map's modifiers, anything about reference, pointer or iterator invalidation.
@@ -57,7 +68,7 @@ Each of the nodes of the linked-list(s) could be spread accross memory and that 
 Traversing buckets made of a linked-list is slow, but you could pray that your hash function save you by spreading keys as much as possible and therefore have tiny buckets.
 But even the most brilliant hash function will not help you with a common use-case of an associative container: iterating through all the key/value pairs.
 Each dereference of the pointer to the next node will be a huge drag on your CPU.
-On other hand, since each node are separately allocated, they can stay wherever they are in memory even if others are added or removed, which provides **stable addressing**.
+On the other hand, since each node are separately allocated, they can stay wherever they are in memory even if others are added or removed, which provides **stable addressing**.
 
 So what could we obtain if we were to free ourselves from **stable addressing**?
 Well, we could wrap our buckets into contiguous memory like so:
@@ -88,7 +99,33 @@ There a lot more layouts for hash tables that I did not mention here and could h
 For instance, any of the [open-addressing](https://en.wikipedia.org/wiki/Hash_table#Open_addressing) strategies could bring their own pros and cons.
 Once again, if you are interested, there are a pletora of cppcon talks on that subject.
 
-#### Faster modulo operation
+
+#### Caveats
+
+By breaking stable-addressing, we cannot retain the address or the reference of a key-value pair from our map carelessly.
+Some operations like adding or removing a key/value pair in the map can provoke invalidation of references or pointers to the other pairs.
+This is the kind of danger I am speaking of:
+
+```c++
+jg::dense_hash_map<std::string, heroe> my_map{{"spongebob", heroe{}}, {"chuck norris", heroe{}}};
+auto& chuck_ref = my_map["chuck norris"];
+
+my_map.erase("spongebob"); // Invalidate all the nodes after spongebob.
+
+chuck_ref.punch_your_face(); // One should never try to retain "chuck norris" as a ref.
+```
+Due to the call to erase, "chuck norris" is moved into the first slot of the internal vector, which ultimately makes chuck's address move.
+Accessing "chuck norris" with a previously acquired reference becomes a danger.
+While this can surprise at first, it is no different than trying to retain a reference to a value in a vector.
+And once again, if you need stable addressing, you are welcome to use unique_ptr within your map.
+
+For the same stable-addressing reasons, implementing the **node api of std::unordered_map** like [extract](https://en.cppreference.com/w/cpp/container/unordered_map/extract) becomes very challenging. To be fair, I have never seen a real usage of that api in any project.
+It might be useful in scenarios where you run long instances of backend-applications and want to move things accross maps without a huge performance impact.
+If by any chance, you have witnessed a usage of that feature, it would be a pleasure to have some explanations in the comments section.
+
+Finally, as we will see in a later post, the **erase** operation of such dense_hash_map becomes slower. For any erase operation, one extra swap operation is needed on top of the destruction and deallocation ones. Thanksfully, a standard usage of a map will have little erase operations compared to lookup or even insertion operations. Speaking of which, how could we improve on those operations?
+
+### Faster modulo operation
 
 As I mentioned previously, a lookup will require that your key is hashed and adjusted with modulo to fit in the amount of buckets available.
 The amount of buckets is changing depending on how many key/value pairs are stored in your map. The more pairs, the more buckets.
@@ -139,7 +176,7 @@ modulo(int, int):
 ```
 
 Interesting! The compiler is spitting a lot more operations. Wouldn't it be simpler to keep `idiv` here? A single operation... 
-Believe or not, your compiler is as smart as a whip and wouldn't do this extra work without significant gains.
+Believe it or not, your compiler is as smart as a whip and wouldn't do this extra work without significant gains.
 So we can clearly extrapolate that our innocent `idiv` must be seriously costly if it happens to be less efficient than a couple of other operations.
 
 So how can we optimize this modulo operation without using `idiv` or a constant?
@@ -163,26 +200,7 @@ modulo(int, int):
 Not only we have substantially less operations, but `lea` (loading from memory) and `and` have much less associated cost than `idiv`.
 This micro-optimisation may look a bit far-fetched, but it actually matters a lot, as proved by [Malte Skarupke](https://www.youtube.com/watch?v=M2fKMP47slQ), when it comes to lookup operations. 
 
-### Design
-No node interface...
+#### Caveats
+Slower
 
-
-
-#### Implementation
-
-
-
-#####
-
-#####
-
-#####
-
-### Conclusion:
-
-- If you are inserting a new pair into an **associative container** consider using `try_emplace` first.
-- If you cannot use **C++17**, prefer to use `emplace` over `insert`.
-- If you are cannot use **C++11**, I feel sorry for you!
-- You can borrow my `lazy_convert_construct` if you are dealing with smart pointers and `try_emplace`, to get a blazzing fast insertion.
-
-A special thanks to my colleague Yo Anes with whom I had a lot of fun discussing this specific topic.
+## First conclusion
