@@ -78,3 +78,5 @@ SITEMAP = {
 
 # Static folders.
 STATIC_PATHS = ['images',]
+
+PYGMENTS_STYLE = 'monokai'
