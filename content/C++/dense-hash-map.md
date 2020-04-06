@@ -80,10 +80,12 @@ Well, we could wrap our buckets into contiguous memory like so:
 Here we are still keeping a linked-list for each buckets, but all the nodes are stored in a vector, therefore one after each others in memory.
 Let's call this a **dense hash map.**
 Instead of using pointers between nodes, we are expressing their relations with indexes within the vector: here the node with **key1** store a "next index" having a value of **2** which is the index of the node with **key2**. And all of that is a huge improvement! We are gaining on all fronts:
+
 - Iterating over all the key/value pairs is as fast as iterating over a vector, which is lightning fast.
 - We are saving a pointer on all nodes - the "prev pointer". We don't need any sort of reverse-traversal of a given bucket, but just a global reverse-traversal of all buckets. 
 - We don't need to maintain a begin and end pointer for the list of nodes.
 - Even iterating over a bucket could be faster as the node shouldn't be too scattered in memory since they all belong to one vector.
+
 All these new properties have a lot of use-cases in the domains I dabble with.
 For instance, the [ECS (Entity-Component-System) pattern](https://en.wikipedia.org/wiki/Entity_component_system) often demands a container where you can do lookup for a component associated to a given entity and at the same being able to traverse all components in one-shot. 
 
@@ -245,6 +247,7 @@ Let's assume that you have some bit flags (flag sets) as a key:
 Now, if you were to take these two flag sets and feed them directly to the modulo operation of the map, they would end-up in the same bucket simply because both of them have `a_precious_flag` and `another_flag` on. This gives way too much importance to the bits that `a_precious_flag` and `another_flag` represent.
 The fact that we are using a power two (4 in this case) will always make the lower bits very significant.
 It is not often that you store flag sets or bit fields as keys in a map, I will give you that, but as a good practice you should:
+
 - Remind yourself not to create a corner-case with bits more important than others in your key.
 - And if it happens, you should re-write your hash function to shuffle your bits around. 
 
