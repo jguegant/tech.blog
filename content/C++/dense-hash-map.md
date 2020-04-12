@@ -1,4 +1,4 @@
-Title: Making a STL-compatible hash map from scratch.
+Title: Making a STL-compatible hash map from scratch - Part 1 - Beating std::unordered_map
 Date: 17:40 04-06-2020 
 Modified: 17:40 04-06-2020
 Tags: C++17, hash map, unordered_map. 
@@ -6,8 +6,8 @@ Slug: dense-hash-map
 
 This post is part of a planned series of posts:
 
-- Part 1 - Beating std::unordered_map (Current)
-- Part 2 - Structuring our code (Coming Soon)
+- **Part 1 - Beating std::unordered_map (Current)**
+- Part 2 - [Growth Policies & The Schrodinger std::pair]({filename}../C++/dense-hash-map-part-2.md)
 - Part 3 - ... (Coming Soon)
 
 # Part 1 - Beating std::unordered_map
@@ -256,4 +256,4 @@ It is not often that you store flag sets or bit fields as keys in a map, I will 
 Now we have a grand master plan to beat `std::unordered_map` by removing some assumptions the standard had to make to be preserve us from some dangers.
 The hacks used are not even too difficult to grasp, so where is the difficulty in writing new containers? Well, some creepy C++ features are waiting for us around the corner.
 
-Be ready for the next phase: preparing a rock-solid code structure for our brand new `dense_hash_map`!
+Be ready for the next phase: [Part 2 - Growth Policies & The Schrodinger std::pair]({filename}../C++/dense-hash-map-part-2.md)!

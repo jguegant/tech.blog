@@ -1,0 +1,6 @@
+- Beating std::unordered_map
+- Part 2 - Structuring our code & Dealing with a const value_type (Current)
+- Part 3 - Writing iterators (Coming Soon)
+- Part 4 - Fast insertion (Coming Soon)
+- Part 5 - Other algorithms
+- Part 6 - CTAD (The missing contructors and CTAD rules I found)
