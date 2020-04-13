@@ -421,6 +421,6 @@ using key_value_pair_t = union_key_value_pair<Key, T>;
 ## Conclusion:
 
 We survived this first day of our journey! We can control the growth of our container using a policy pattern.
-We also have a Schrodinger **std::pair** at our disposal to move our key/value pairs blazingly fast accross memory while preventing our users to shoot themselves in the feet.
+We also have a **Schrodinger std::pair** at our disposal to move our key/value pairs blazingly fast accross memory while preventing our users to shoot themselves in the feet.
 
 Be ready for the next phase: the dreaded iterators and allocators are waiting for you!
