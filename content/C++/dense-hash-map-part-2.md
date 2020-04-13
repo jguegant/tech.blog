@@ -388,7 +388,7 @@ This [static_assert](https://en.cppreference.com/w/cpp/language/static_assert) e
 Note: If you are a C++ purist that never abuse the standard or write his own undefined behaviour, here is the exact point in this post where you should use your jetpack and fly away to a better place.
 
 In this scenario, we are as paranoid as [Miro Knejp](https://www.youtube.com/watch?v=IAdLwUXRUvg): clearly, the standard committee is trying to hide the true power of unions to us. Yes, we can pun!
-<center><img width=35% height=35% src="{filename}/images/non-conforming-cpp.png" alt="Miro Knejp talk"/></center>
+<center><a href="https://www.youtube.com/watch?v=IAdLwUXRUvg"><img width=35% height=35% src="{filename}/images/non-conforming-cpp.png" alt="Miro Knejp talk"/></a></center>
 
 Type-punning through unions have been unofficially supported in all three major compilers for longer than I am alive.
 Our case is quite safe, given that:
@@ -417,6 +417,8 @@ using key_value_pair_t = union_key_value_pair<Key, T>;
 #endif
 
 ```
+
+/!\ On a more serious note: you should really be aware of the undefined behaviour of this solution. If your application is used in critical operations, you should refrain yourself from defying the standard. On the other hand, if your application is non-critical (or have a rock-solid release process), you could give a try on the fast type punning. Choose wisely!
 
 ## Conclusion:
 
