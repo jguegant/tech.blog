@@ -208,7 +208,7 @@ fast_module(int, int):
     ret
 ```
 
-Not only we have less operations, but `lea` (loading from memory) and `and` have much less associated cost than `idiv`.
+Not only we have less operations, but `lea` (compute a memory address) and `and` have much less associated cost than `idiv`.
 This micro-optimisation may look a bit far-fetched, but it actually matters a lot, as proved by [Malte Skarupke](https://www.youtube.com/watch?v=M2fKMP47slQ), when it comes to lookup operations.
 
 To further convince you, I have run both implementations of modulo on [quick-bench](http://quick-bench.com/XZGeHdIRvI8tjsgHHmPP22bN8us).

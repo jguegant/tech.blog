@@ -147,7 +147,7 @@ struct power_of_two_growth_policy
         min_capacity |= min_capacity >> 8;
         min_capacity |= min_capacity >> 16;  
 
-        if constexpr (sizeof(min_capacity) == 8)
+        if constexpr (std::numeric_limits<decltype(min_capacity)>::digits >= 64)
         {
             min_capacity |= min_capacity >> 32;
         }
@@ -177,7 +177,7 @@ After filling starting from the right:
 And if we add one:
 0010 0000 (binary) == 32 (decimal)
 ```
-`compute_closest_capacity` is doing exactly that with the operator `|=` and some bit-shifting with the operator `>>`. It handles the case where we already have a power two by substracting one before processing the number. Finally, by sprinkling a bit of `if constexpr` we can detect whether `std::size_t` is made of 32  or 64 bits. The more bits we have, the more filling we need to do.
+`compute_closest_capacity` is doing exactly that with the operator `|=` and some bit-shifting with the operator `>>`. It handles the case where we already have a power two by substracting one before processing the number. Finally, by sprinkling a bit of `if constexpr` we can detect whether `std::size_t` is made of 64 bits or more. The more bits we have, the more filling we need to do.
 
 Note: you can also achieve a similar effect with some built-ins in your conpiler. For instance, GCC provides [__builtin_clz](https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html) which can be of great help.
 
