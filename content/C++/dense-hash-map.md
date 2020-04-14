@@ -111,7 +111,7 @@ Some operations like adding or removing a key/value pair in the map can provoke 
 This is the kind of danger I am speaking of:
 
 ```c++
-jg::dense_hash_map<std::string, heroe> my_map{{"spongebob", heroe{}}, {"chuck norris", heroe{}}};
+jg::dense_hash_map<std::string, hero> my_map{{"spongebob", hero{}}, {"chuck norris", hero{}}};
 auto& chuck_ref = my_map["chuck norris"];
 
 my_map.erase("spongebob"); // Invalidate all the nodes after spongebob.

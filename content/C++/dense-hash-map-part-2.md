@@ -138,18 +138,19 @@ struct power_of_two_growth_policy
     // Given a desired new capacity for the bucket container, pick the closest power of two. 
     static constexpr auto compute_closest_capacity(std::size_t min_capacity) -> std::size_t
     {
-         // We didn't see that trick yet.
+        // We didn't see that trick yet.
+        
+        constexpr auto highest_capacity = (std::size_t{1} << (std::numeric_limits<std::size_t>::digits - 1));
+        
+        if (min_capacity > highest_capacity) {
+            assert(false && "Maximum capacity for the dense_hash_map reached.");
+            return highest_capacity;
+        }
+
         --min_capacity;                  
 
-        min_capacity |= min_capacity >> 1;
-        min_capacity |= min_capacity >> 2;
-        min_capacity |= min_capacity >> 4;
-        min_capacity |= min_capacity >> 8;
-        min_capacity |= min_capacity >> 16;  
-
-        if constexpr (std::numeric_limits<decltype(min_capacity)>::digits >= 64)
-        {
-            min_capacity |= min_capacity >> 32;
+        for (auto i = 1; i < std::numeric_limits<std::size_t>::digits; i *= 2) {
+            min_capacity |= min_capacity >> i;
         }
 
         return ++min_capacity;
@@ -177,7 +178,7 @@ After filling starting from the right:
 And if we add one:
 0010 0000 (binary) == 32 (decimal)
 ```
-`compute_closest_capacity` is doing exactly that with the operator `|=` and some bit-shifting with the operator `>>`. It handles the case where we already have a power two by substracting one before processing the number. Finally, by sprinkling a bit of `if constexpr` we can detect whether `std::size_t` is made of 64 bits or more. The more bits we have, the more filling we need to do.
+`compute_closest_capacity` is doing exactly that with the operator `|=` and some bit-shifting with the operator `>>`. It handles the case where we already have a power two by substracting one before processing the number. We also cap the minimum capacity to the highest power of two we can represent to avoid an overflow in the result.
 
 Note: you can also achieve a similar effect with some built-ins in your conpiler. For instance, GCC provides [__builtin_clz](https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html) which can be of great help.
 
@@ -212,7 +213,7 @@ So here is the deal, `std::unordered_map` has a peculiar `value_type` (`value_ty
 When you think a bit more about it, this design prevents you to put yourself in serious troubles. You cannot mutate the keys in your associative container once you have inserted them. Typically, without a `const Key`, you would be able to do such crazy moves: 
 
 ```c++
-jg::dense_hash_map<std::string, heroe> my_map{{"spongebob", heroe{}}, {"chuck norris", heroe{}}};
+jg::dense_hash_map<std::string, hero> my_map{{"spongebob", hero{}}, {"chuck norris", hero{}}};
 auto it = my_map.find("chuck norris");
 
 it->first = "Chuck Norris"; // We are mutating the key to properly capitalise the venerable chuck.
