@@ -8,7 +8,7 @@ This post is part of a series of posts:
 
 - [Part 1 - Beating std::unordered_map]({filename}../C++/dense-hash-map.md)
 - **Part 2 - Growth Policies & The Schrodinger std::pair (Current)**
-- Part 3 - The wonderful world of iterators and allocators (Coming Soon)
+- [Part 3 - The wonderful world of iterators and allocators]({filename}../C++/dense-hash-map-3.md)
 - Part 4 - ... (Coming Soon)
 
 In the [previous post]({filename}../C++/dense-hash-map.md), we started a quest that consists in implementing an associative container similar to `std::unordered_map` in the C++ standard library. We saw two approaches that could help us in beating the performance of most `std::unordered_map` implementations: freeing ourselves from stable-addressing and swapping the modulo operation with some bit-wise operations.
@@ -426,4 +426,4 @@ using key_value_pair_t = union_key_value_pair<Key, T>;
 We survived this first day of our journey! We can control the growth of our container using a policy pattern.
 We also have a **Schrodinger std::pair** at our disposal to move our key/value pairs blazingly fast accross memory while preventing our users to shoot themselves in the feet.
 
-Be ready for the next phase: the dreaded iterators and allocators are waiting for you!
+Be ready for the next phase: [the dreaded iterators and allocators]({filename}../C++/dense-hash-map-3.md) are waiting for you!

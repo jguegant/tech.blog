@@ -7,8 +7,8 @@ Slug: dense-hash-map
 This post is part of a planned series of posts:
 
 - **Part 1 - Beating std::unordered_map (Current)**
-- Part 2 - [Growth Policies & The Schrodinger std::pair]({filename}../C++/dense-hash-map-part-2.md)
-- Part 3 - ... (Coming Soon)
+- [Part 2 - Growth Policies & The Schrodinger std::pair]({filename}../C++/dense-hash-map-part-2.md)
+- [Part 3 - The wonderful world of iterators and allocators]({filename}../C++/dense-hash-map-3.md)
 
 # Part 1 - Beating std::unordered_map
 
