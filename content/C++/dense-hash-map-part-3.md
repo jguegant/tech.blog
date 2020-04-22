@@ -25,7 +25,6 @@ Let me be your mentor and I will guide you through these tough areas!
 
 If we base ourselves on the [unordered_map's interface](https://en.cppreference.com/w/cpp/container/unordered_map), we should have at least four different sorts of iterator:
 
-
 | *Name*                   | *Description*                                                      |
 |--------------------------|--------------------------------------------------------------------|
 | **iterator**             | Iterate through all key/value pairs of the map                     |
@@ -34,10 +33,9 @@ If we base ourselves on the [unordered_map's interface](https://en.cppreference.
 | **const_local_iterator** | Similar to local_iterator but yields const references to the pairs |
 
 
-
 It becomes clear that we will actually need to create only two types of iterators: **iterator** and **local_iterator**. The other two can be easily derived from the first ones. We will just sprinkle some `const` where we should.
 
-### Crafting an iterator:
+### The interior of iterator:
 
 If you wonder which kind of iterator to tackle first, `iterator` and its little bro `const_iterator` are probably the more interesting ones for our users.
 Quite often you will want to iterate through all key/value pairs to perform some operations and this is what `iterator` is dedicated for.
@@ -60,6 +58,8 @@ To iterate over the `nodes_` container, we can simply use its own... iterators. 
 On the other hand, `nodes_`'s iterator type has `node<Key, T>&` as its `reference` type when we need `std::pair<const Key, T>&` for `dense_hash_map::iterator`.
 What we need is a projection onto the member `pair` of `node<Key, T>` while iterating over `nodes_`.
 
+#### C++20 in all its splendor:
+
 In an ideal world, we would have a **C++20** compiler shipped with a fully **C++20** compliant standard library. Within it, we would have the [holly range library](https://en.cppreference.com/w/cpp/ranges), which would permit to lazily transform our `nodes_` into another one:
 
 ```c++
@@ -73,7 +73,7 @@ class dense_hash_map {
     auto end() {
         return projected_range().end();
     }
-
+    // ...
 private:
     auto projected_range() {
         return nodes_ | std::views::transform([](auto& node){ return node.pair; });
@@ -81,10 +81,19 @@ private:
     // ...
 };
 ```
-With all the fuss around the range library...
+The range library has its quirks and limitations as some fervent members of the lost C++ society will point out.
+But for this kind of scenario, it is of great help. It is vastly superior to the C++17 solution as we will see.
+You can easily implement `cbegin` and `cend` in a similar way: just make your `projected_range` function const.
+`std::views::transform` even retains the concept of the range/iterators it is applied to, meaning that iterators it output in our case are still `LegacyForwardIterator`.
+
+#### The inferior C++17 solution:
+
+As the Lieutenant-Colonel Bear Grylls would say: "the rules of survival never change, whether you're in a desert or in an old C++ project.".
+We are left on our own without any ranges at our disposal. We must forge our own iterator type by hand!
 
 
-### Crafting a local iterator:
+
+### local iterator - A forward iterator without glamor:
 
 I hate this name. For the users it is probably used to debug the map.
 
