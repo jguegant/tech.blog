@@ -247,16 +247,19 @@ I opted for the option ["give access to a const reference of my sub-iterator to 
 
 ##### A quick note for some detractors:
 
-Our beautiful **C++20** solution expressed in few expressive lines, became 207 lines of pure... iterator chaos. Certainely, ranges, concepts or coroutines can do more harm than good [under some circumstances](https://aras-p.info/blog/2018/12/28/Modern-C-Lamentations/), but entirely discarding their usage due to these limitations is not a smart move either. They do bring a lot of value as clearly shown here!
+Our beautiful **C++20** solution expressed in few lines, became 207 lines of pure... iterator chaos. Certainely, ranges, concepts or coroutines can do more harm than good [under some circumstances](https://aras-p.info/blog/2018/12/28/Modern-C-Lamentations/). Typically, the next iterator we will work on would not be a good fit for ranges. But entirely discarding their usage due to some limitations is not a smart move either. They do bring a lot of value as clearly shown with our `dense_hash_map_iterator`!
 
 ### local iterator - a forward iterator without glamor:
 
-I hate this name. For the users it is probably used to debug the map.
+`local iterator` is the crippled little cousin of `iterator`. To start with, its name badly represents what it does: what sort of locality is this about?
+It cannot be easily expressed using range views due to its access pattern. And to finish, it is a mere [LegacyForwardIterator](https://en.cppreference.com/w/cpp/named_req/ForwardIterator) and can hardly be more than that.
+
+What this ill-named iterator gives you is an access to a specific buckets, i.e jumping through all the pairs that have keys whose hash collide.
+Here is what an iteration in a bucket of size two would look like:
 
 <center><img width=50% height=50% src="{filename}/images/dense-hash-map-local-iterator.webp" alt=""/></center>
 
-`ForwardIterator`
-
+Giving access to 
 
 ## A special constructor for allocators:
 
