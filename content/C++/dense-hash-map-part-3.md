@@ -254,17 +254,77 @@ Our beautiful **C++20** solution expressed in few lines, became 207 lines of pur
 `local iterator` is the crippled little cousin of `iterator`. To start with, its name badly represents what it does: what sort of locality is this about?
 It cannot be easily expressed using range views due to its access pattern. And to finish, it is a mere [LegacyForwardIterator](https://en.cppreference.com/w/cpp/named_req/ForwardIterator) and can hardly be more than that.
 
-What this ill-named iterator gives you is an access to a specific buckets, i.e jumping through all the pairs that have keys whose hash collide.
+What this ill-named iterator gives you is an access to a specific bucket, i.e jumping through all the pairs that have keys whose hash collide.
 Here is what an iteration in a bucket of size two would look like:
 
 <center><img width=50% height=50% src="{filename}/images/dense-hash-map-local-iterator.webp" alt=""/></center>
 
-Giving access to 
+Here **Key1** and **Key2** hashes collides, so our iterator started on bucket **1** yields both of these pairs.
+
+To reflect the true purpose of this iterator, I named it `bucket_iterator`.
+Internally, our `bucket_iterator` can be used in conjunction with some of the standard [algorithms](https://en.cppreference.com/w/cpp/algorithm).
+For instance, we can apply a [std::find_if](https://en.cppreference.com/w/cpp/algorithm/find) to quickly pin-point a pair with a given **key** if we already know this **key** belongs to a specific **bucket**. Externally, I am not quite sure who uses this local/bucket iterator. My wild guess is that sometimes you want, as a user, to fine-tune your hashes or the [load_factor](https://en.cppreference.com/w/cpp/container/unordered_map/load_factor) of your hash map. This **local iterator** permits you to debug your hash-map without too much hassle.
+Whether this was worth a standardisation or not, I am not exactly sure. You shouldn't go against the sacred standard, so a local iterator in your hash map you should have. 
+
+The class [bucket_iterator](https://github.com/Jiwan/dense_hash_map/blob/d80d3da01d9981154e78ea85b3135b4a66a150a3/include/jg/details/bucket_iterator.hpp#L13) ends-up being very similar to `dense_hash_map_iterator`. In fact, it takes exactly the same template parameters for the same purpose. It is also a lot smaller since it is only a **LegacyForwardIterator**. It mainly differs in its [increment operator](https://github.com/Jiwan/dense_hash_map/blob/d80d3da01d9981154e78ea85b3135b4a66a150a3/include/jg/details/bucket_iterator.hpp#L47) and [dereference operator](https://github.com/Jiwan/dense_hash_map/blob/d80d3da01d9981154e78ea85b3135b4a66a150a3/include/jg/details/bucket_iterator.hpp#L35) since we are jumping around rather than doing a linear scan:
+
+```c++
+class bucket_iterator {
+    // ...
+    auto operator++() noexcept -> bucket_iterator&
+    {
+        current_node_index_ = (*nodes_container)[current_node_index_].next;
+        //                                                              ^^ ++ == moving to the next node in the linked-list. 
+        return *this;
+    }
+
+    auto operator*() const noexcept -> reference
+    {
+        if constexpr (projectToConstKey) { // Still using the if constexpr trick to get the right Schrodinger pair.
+            return (*nodes_container)[current_node_index_].pair.const_key_pair();
+                                      // ^^^ Dereferencing means looking at the node at the current index.
+        } else {
+            return (*nodes_container)[current_node_index_].pair.pair();
+        }
+    }
+
+private:
+    nodes_container_type* nodes_container; // The container of all nodes.
+    node_index_type current_node_index_ = node_end_index<Key, T>;
+    // ^^ The index of the current node we are on. ^^ By default we are pointing to "nowhere", the end node. 
+};
+```
+As you can see, this is nothing more than a classic iteration over a list. But instead of using a "next pointer", we have a **next index**.
+We cannot produce a bidirectional iterator as we would need a **previous index**, neither we can have random access due to the dereference step.
+
+The last part of the puzzle for our iterators is a conversion function. After doing a `std::find_if` on a `bucket_iterator` it can be really convenient to send as a result a more useful `iterator` to our users. In a simplified form of this function looks like this:
+
+```c++
+    template <class Key, class T, class Container, bool isConst, bool projectToConstKey>
+    uto bucket_iterator_to_iterator(
+        const bucket_iterator<Key, T, Container, isConst, projectToConstKey>& bucket_it,
+        node_container_type& nodes
+    ) -> dense_hash_map_iterator<Key, T, Container, isConst, projectToConstKey>
+    {
+        if (bucket_it.current_node_index() == node_end_index<Key, T>) {
+            return {nodes.end()};
+        } else {
+            return {std::next(nodes.begin(), bucket_it.current_node_index())};
+        }
+    }
+```
+There are two cases:
+
+- If our `bucket_iterator` is at the end of the linked-list, it means that it points to nowhere. Therefore we return a `dense_hash_map_iterator` also pointing at the end.
+- Otherwise, we grab the current index our `bucket_iterator`. We then extract the begin iterator of our container of nodes and moving until that index. We can then craft a `dense_hash_map_iterator` out of it. Since our container's iterator is **random access** this conversion has very little cost.
+
+Enough with **iterators** and let's move onto **allocators**!
 
 ## A special constructor for allocators:
 
-
-In the C++ lore, we have another 
+In the C++ lore, we have other "or" contenders when it comes to annoyance: **allocators**.
+At this point I am assuming that you all know what an allocator does: it allocates memory for the objects inside a container.
+But C++ being C++, it becomes a bit more tricky when you have **containers of containers**.
 
 <center><img width=40% height=40% src="{filename}/images/gladiator.jpg" alt="Gladiator"/></center>
 
