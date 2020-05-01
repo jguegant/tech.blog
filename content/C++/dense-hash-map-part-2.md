@@ -227,8 +227,8 @@ Now, let's assume that our `details::node<Key, T>` has a `std::pair<const Key, T
 ```c++
 template <class Key, class T>
 struct node {
-    std::pair<const Key, T> pair;          // Our glorious pair.
     nodes_size_type next = node_end_index; // Next index of the node in the linked-list.
+    std::pair<const Key, T> pair;          // Our glorious pair.
 };
 ```
 

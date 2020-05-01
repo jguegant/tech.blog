@@ -7,7 +7,7 @@ Slug: dense-hash-map3
 This post is part of a series of posts:
 
 - [Part 1 - Beating std::unordered_map]({filename}../C++/dense-hash-map.md)
-- [Part 2 - Growth Policies & The Schrodinger std::pair]({filename}../C++/dense-hash-map-part-2.md)**
+- [Part 2 - Growth Policies & The Schrodinger std::pair]({filename}../C++/dense-hash-map-part-2.md)
 - **Part 3 - The wonderful world of iterators and allocators (Current)**
 - Part 4 - ... (Coming Soon)
 
@@ -323,13 +323,181 @@ Enough with **iterators** and let's move onto **allocators**!
 ## A special constructor for allocators:
 
 In the C++ lore, we have other "or" contenders when it comes to annoyance: **allocators**.
-At this point I am assuming that you all know what an allocator does: it allocates memory for the objects inside a container.
+At this point I am assuming that you all know what an allocator does: it allocates memory for the objects stored inside a container.
 But C++ being C++, it becomes a bit more tricky when you have **containers of containers**.
 
 <center><img width=40% height=40% src="{filename}/images/gladiator.jpg" alt="Gladiator"/></center>
 
+### Nested containers and their allocator:
 
-## Conclusion:
+Let's try to play around with a container that would be very similar to our `dense_hash_map::nodes_` (a vector of pairs), and see how it reacts to custom allocators:
+
+```c++
+struct debug_pmr_resource : std::pmr::memory_resource // pmr memory resource == allocator on steroids.
+{
+    auto do_allocate(std::size_t bytes, std::size_t alignment) -> void* override
+    {
+        std::cout << "Allocated: " << bytes << "\n";    // We will print a message everytime something has been allocated.
+        return std::pmr::get_default_resource()->allocate(bytes, alignment); // Forward to the default allocator of your app.
+    }
+
+    void do_deallocate(void* p, std::size_t bytes, std::size_t alignment) override
+    {
+        std::pmr::get_default_resource()->deallocate(p, bytes, alignment); // Forward to the default allocator of your app.
+    }
+
+    auto do_is_equal(const std::pmr::memory_resource&) const noexcept -> bool override
+    {
+        return true; // Our resource has no state, all instances are the same.
+    }
+};
+
+debug_pmr_resource my_resource;
+std::pmr::vector<std::pair<std::string, std::string>> nodes{&my_resource}; // We feed our pmr resource to a pmr vector.
+
+auto some_long_string = "WinnieLoursonEstChauveCommeUneSouris"; // String long enough to disable small string optimization.
+test.emplace_back(some_long_string, some_long_string); // Should construct a pair of two strings.
+
+// Prints on godbolt: 
+// Allocated: 64
+```
+
+Before we dive a bit more into this code snippet, all standard containers with a prefix `pmr` are just the same usual containers with a predefined [polymorphic allocator](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator). This new allocator saves you from the hassle of writing an allocator the old fashion way. All you need to do is to write a resource with three member functions as shown here. Polymorphic allocators are worth a longer post that I will never write. In the meantime, I suggest you to use your google-fu to find some nice [articles](https://blog.feabhas.com/2019/03/thanks-for-the-memory-allocator/) or videos about it.
+
+Back to our snippet... Right here we have an external container `std::pmr::vector` which takes our resource/allocator and then we construct two strings (some internal containers) in it. How many allocations are we going to see from `debug_pmr_resource`'s point of view? The answer is [one and only one](https://godbolt.org/z/zPboQb). The vector's buffer will be allocated through `debug_pmr_resource` but not the buffers of our strings. It is unfortunate to be in such situation. As a user of some custom allocators, you really want all related objects to be stored in the same pool of memory, even more when this objects are nested structures.
+
+Does this means that you need to make both of these strings "pmr" too and feed them with the `debug_pmr_resource` at construction? Well, yes and no. 
+Changing `std::string` to `std::pmr::string` is necessary. `std::allocator` (std::string) and `std::polymorphic_allocator` (std::pmr::string) are not the same type, there is no C++ world where both of those could be compatible. But the feeding of `my_resource` is not necessary. There is a mechanism already in place from the standard that mandates that our external container `nodes` would forward its allocator to its inner containers (the two strings) if the allocator type they use are the same. We can easily [check that](https://godbolt.org/z/Sik7S8):
+
+```c++
+debug_pmr_resource my_resource;
+std::pmr::vector<std::pair<std::pmr::string, std::pmr::string>> nodes{&my_resource}; // Note our string are also prefixed by pmr now.
+
+auto some_long_string = "UnPangolinVautMieuxQueRien";
+test.emplace_back(some_long_string, some_long_string); 
+
+// Prints on godbolt: 
+// Allocated: 80
+// Allocated: 27
+// Allocated: 27
+
+```
+
+Hurray we see two more allocations going through the resource! With a size of `27`, it must really be some buffers storing `UnPangolinVautMieuxQueRien` plus `\0`. The allocator forwarding is happening!
+
+The next step for us is to be sure that we can achieve the same success not only with `std::pair<std::pmr::string, std::pmr::string>` but also with our `node` type we defined in the previous post: the type that store both a Schrodinger `std::pair` and a `next` index.
+
+```c++
+debug_pmr_resource my_resource;
+std::pmr::vector<node<std::pmr::string, std::pmr::string>> nodes{&my_resource}; // Using our node type.
+
+auto some_long_string = "FreedomFriesAreTooGreasy";
+test.emplace_back(0, some_long_string, some_long_string); 
+//                ^ index
+
+// Would print: 
+// Allocated: xx
+```
+
+Bjarne damn it! We have lost the allocator forwarding again! That's unnacceptable for our `dense_hash_map` internals.
+Given that only difference is `std::pair` and `node`, should we start to investigate what makes `std::pair` so special? 
+
+### Being a good investigator:
+
+"If you stare into the C++ standard, the C++ standard stares back at you." - Nietzsche 
+
+If you have a look at the pages from the [standard](http://eel.is/c++draft/pairs) or [cppreference](https://en.cppreference.com/w/cpp/utility/pair) about `std::pair` you will not find anything useful to us. There are no mentions of allocators in its [constructors](https://en.cppreference.com/w/cpp/utility/pair/pair). How did that even work?
+
+I am not a sadist, so I will help you a bit. The response to your answer is in [std::uses_allocator](https://en.cppreference.com/w/cpp/memory/uses_allocator) in **C++17**. This type-trait is used when constructing objects within your allocators (more precisely in [std::make_obj_using_allocator](https://en.cppreference.com/w/cpp/memory/make_obj_using_allocator) in **C++20**). It permits to checks if the object you are creating using your allocator takes an allocator **itself**! Here comes a shortened explanation.
+
+There are two ways std::uses_allocator will detect your object can receive an allocator:
+
+1. If it has a member typedef `allocator_type`.
+2. If `std::uses_allocator` is specialised to return true for your object type.
+
+Of course, `std::pair` respects NEITHER of those rules. But here is the caveat:
+
+> As a special case, std::pair is treated as a uses-allocator type even though std::uses_allocator is false for pairs (unlike e.g. std::tuple): see pair-specific overloads of std::polymoprhic_allocator::construct and std::scoped_allocator_adaptor::construct (until C++20)std::uses_allocator_construction_args (since C++20).
+
+Somewhere, deep in a cave, there is a C++ standard committee troll frenetically enjoying his/her/its joke on us with `std::uses_allocator` returning false EVEN THOUGH `std::pair` will be correctly forwarding allocators. Please don't feed it, he/she/it has done enough damage here.
+
+### Harnessing std::uses_allocator's power:
+
+Unlike the troll, we cannot change the standard to fit our `node` type. So we need to use `std::uses_allocator` the proper way.
+We will start by adding a specialisation to signal that our type wants to forward allocators:
+
+```c++
+namespace std
+{
+template <class Key, class T, class Allocator>
+struct uses_allocator<node<Key, T>, Allocator> : true_type
+{
+};
+}
+```
+
+This express that for any `node` and any `Allocator`, an instance of `node` can receive an instance of `allocator` to forward it deep down.
+By which mean the instance of `node` will receive that instance `allocator`? With some special constructors:
+
+```c++
+template <class Key, class T>
+struct node 
+{
+    // ...
+    // ...
+
+    // Constructor that takes arguments to make an index and a pair.
+    template <class Allocator, class... Args>
+    node(std::allocator_arg_t, const Allocator& alloc, node_index_t<Key, T> next, Args&&... args) 
+        : next(next), pair(std::allocator_arg, alloc, std::forward<Args>(args)...)
+    {}
+
+    // Copy constructor.
+    template <class Allocator, class Node>
+    node(std::allocator_arg_t, const Allocator& alloc, const Node& other)
+        : next(other.next), pair(std::allocator_arg, alloc, other.pair.pair())
+    {}
+
+    // Move constructor.
+    template <class Allocator, class Node>
+    node(std::allocator_arg_t, const Allocator& alloc, Node&& other)
+        : next(std::move(other.next)), pair(std::allocator_arg, alloc, std::move(other.pair.pair()))
+    {}
+
+private:
+    nodes_size_type next = node_end_index; // Next index of the node in the linked-list.
+    key_value_pair_t<Key, T> pair;         // Our glorious Schrodinger pair.
+};
+```
+
+All these constructors must take a `std::allocator_arg_t` tag parameter to differentiate them from the others, the non-allocator-forwarding ones.
+The second parameter is always the instance of the allocator itself `alloc` and the rest are the parameters you would find in their non-allocator-forwarding equivalents. As I just implied, you must have exactly the same amount of allocator-forwarding constructors as you have normal ones! You must be able to do all operations with or without involving allocators.
+
+As soon as we have an `alloc` we can pass-it deep down to the Schrodinger pair. The Schrodinger pair must then construct its mutable `std::pair` variant taking that allocator in consideration:
+
+```c++
+template <class Key, class T>
+union union_key_value_pair
+{
+    //...
+
+    template <class Allocator, class... Args>
+    union_key_value_pair(std::allocator_arg_t, const Allocator& alloc, Args&&... args)
+    {
+        auto alloc_copy = alloc;
+        std::allocator_traits<Allocator>::construct(alloc_copy, &pair_, std::forward<Args>(args)...);
+    }
+
+    //...
+};
+```
+
+Once again, `union_key_value_pair` uses the tag type `std::allocator_arg_t` to be sure not to collide with other constructors. 
+We will then construct the `pair_` in place ; meaning that we will skip the memory allocation part of it since we already have the storage for it. Constructing an object in **C++17** with an allocator requires you a Phd in C++ arcaneries: you need a non-const instance of that allocator coupled to the [allocator_traits](https://en.cppreference.com/w/cpp/memory/allocator_traits). **C++20** can once again save you some time here with [std::make_obj_using_allocator](https://en.cppreference.com/w/cpp/memory/make_obj_using_allocator).
+
+And on this positive note we are done with allocators! Our `node` class has the same behaviour a `std::pair` would, it will .
+
+## Conclusor:
 
 We survived this first day of our journey! We can control the growth of our container using a policy pattern.
 We also have a **Schrodinger std::pair** at our disposal to move our key/value pairs blazingly fast accross memory while preventing our users to shoot themselves in the feet.
