@@ -51,7 +51,7 @@ The modern picasso in me decided to show you what this range-loop would do inter
 
 <center><img width=50% height=50% src="{filename}/images/dense-hash-map-iterator.webp" alt=""/></center>
 
-Yes, it should be as simple as iterating in our `nodes_` container. No, it won't be as easy you may think.
+Yes, it should be as simple as iterating in our `nodes_` container. No, it won't be as easy as you may think.
 
 To iterate over the `nodes_` container, we can simply use its own... iterators. Conveniently, `nodes_`'s iterator type is also following the concept
 [LegacyForwardIterator](https://en.cppreference.com/w/cpp/named_req/ForwardIterator) which is also needed for our `dense_hash_map::iterator` type.
