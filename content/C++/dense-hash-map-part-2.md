@@ -9,7 +9,7 @@ This post is part of a series of posts:
 - [Part 1 - Beating std::unordered_map]({filename}../C++/dense-hash-map.md)
 - **Part 2 - Growth Policies & The Schrodinger std::pair (Current)**
 - [Part 3 - The wonderful world of iterators and allocators]({filename}../C++/dense-hash-map-part-3.md)
-- Part 4 - ... (Coming Soon)
+- Part 4 - An insertion maze (Coming Soon)
 
 In the [previous post]({filename}../C++/dense-hash-map.md), we started a quest that consists in implementing an associative container similar to `std::unordered_map` in the C++ standard library. We saw two approaches that could help us in beating the performance of most `std::unordered_map` implementations: freeing ourselves from stable-addressing and swapping the modulo operation with some bit-wise operations.
 Due to its layout, we called this new associative container a `dense_hash_map`. You can find a reference implementation [right here](https://github.com/Jiwan/dense_hash_map).

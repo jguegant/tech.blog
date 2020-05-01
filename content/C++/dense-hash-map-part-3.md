@@ -1,7 +1,7 @@
 Title: Making a STL-compatible hash map from scratch - Part 3 - The wonderful world of iterators and allocators
-Date: 17:40 04-21-2020 
-Modified: 17:40 04-21-2020
-Tags: C++17, hash map, unordered_map, iterator, allocator
+Date: 17:40 05-01-2020 
+Modified: 17:40 05-01-2020
+Tags: C++20, C++17, hash map, unordered_map, iterator, allocator
 Slug: dense-hash-map3
 
 This post is part of a series of posts:
@@ -495,11 +495,11 @@ union union_key_value_pair
 Once again, `union_key_value_pair` uses the tag type `std::allocator_arg_t` to be sure not to collide with other constructors. 
 We will then construct the `pair_` in place ; meaning that we will skip the memory allocation part of it since we already have the storage for it. Constructing an object in **C++17** with an allocator requires you a Phd in C++ arcaneries: you need a non-const instance of that allocator coupled to the [allocator_traits](https://en.cppreference.com/w/cpp/memory/allocator_traits). **C++20** can once again save you some time here with [std::make_obj_using_allocator](https://en.cppreference.com/w/cpp/memory/make_obj_using_allocator).
 
-And on this positive note we are done with allocators! Our `node` class has the same behaviour a `std::pair` would, it will .
+And on this positive note we are done with allocators! Our node class has the same behaviour a std::pair, it will reuse the allocator it was allocated with for its own members.
 
-## Conclusor:
+## Conclusion from the author:
 
-We survived this first day of our journey! We can control the growth of our container using a policy pattern.
-We also have a **Schrodinger std::pair** at our disposal to move our key/value pairs blazingly fast accross memory while preventing our users to shoot themselves in the feet.
+It was quite a labor to implement the iterators types for our dense_hash_map. We also discovered with stupor that allocators are not working out of the box for custom types. To have or not to have access to C++20 is also a huge factor in how maintenable you can write such code. C++17 demands a lot more rigor when dealing with pseudo-standard code.
 
-Be ready for the next phase: the dreaded iterators and allocators are waiting for you!
+I have been selling these blog posts as us building a hash map together, so I am assuming that you are quite furor by now: all the prior posts and this one did not contain a single line of algorithms. The rumor is that the next post will be about a maze of insertion algorithms, so stay tuned!
+
