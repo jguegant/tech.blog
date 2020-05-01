@@ -11,7 +11,7 @@ This post is part of a series of posts:
 - **Part 3 - The wonderful world of iterators and allocators (Current)**
 - Part 4 - ... (Coming Soon)
 
-In the [previous post]({filename}../C++/dense-hash-map-part-2.md), we prepared our data-structure to be able to store our key/value pairs in a performant way: our design permit us to expose, for safety, immutable keys to our users while internally having mutable access for speed. We also had fun with more bit magic to create a special growth policy for our bucket container. You can find a reference implementation [right here](https://github.com/Jiwan/dense_hash_map).
+In the [previous post]({filename}../C++/dense-hash-map-part-2.md), we prepared our data-structure to be able to store our key/value pairs in a performant way: our design permits us to expose, for safety, immutable keys to our users while internally having mutable access for speed. We also had fun with more bit magic to create a special growth policy for our bucket container. You can find a reference implementation [right here](https://github.com/Jiwan/dense_hash_map).
 
 At this point, you are probably eager to start working on the algorithms of our `dense_hash_map`. Alas, we are not there yet! Two new kind of challengers entered the arena: **allocators** and **iterators**. Like any word finishing by "or" (Terminator, Alligator, Abductor, Debtor, Elevator, Moderator, Emperor...) there is a certain violence or authority coming out of it of these twos. And rightfully so, having those in your project is a good indicator that you will spend nights banging your head against a brick wall.
 
@@ -37,9 +37,9 @@ It becomes clear that we will actually need to create only two types of iterator
 
 ### The interior of iterator:
 
-If you wonder which kind of iterator to tackle first, `iterator` and its little bro `const_iterator` are probably the more interesting ones for our users.
+If you wonder which kind of iterator to tackle first, `iterator` and its "little bro" `const_iterator` are probably the more interesting ones for our users.
 Quite often you will want to iterate through all key/value pairs to perform some operations and this is what `iterator` is dedicated for.
-More precisely, `iterator` is the type returned by [begin](https://en.cppreference.com/w/cpp/container/unordered_map/begin), [end](https://en.cppreference.com/w/cpp/container/unordered_map/end) & Co. which permits you to create a range-based for loop such as:
+More precisely, `iterator` is the type returned by [begin](https://en.cppreference.com/w/cpp/container/unordered_map/begin), [end](https://en.cppreference.com/w/cpp/container/unordered_map/end) & Co. which allows you to create a range-based for loop such as:
 
 ```c++
 for (auto& [key, value] : my_map) {
@@ -57,12 +57,12 @@ To iterate over the `nodes_` container, we can simply use its own... iterators. 
 [LegacyForwardIterator](https://en.cppreference.com/w/cpp/named_req/ForwardIterator) which is also needed for our `dense_hash_map::iterator` type.
 Even better, it actually follows the [LegacyRandomAccessIterator concept](https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator) which is a powerful subset of the **LegacyForwardIterator** concept.
 
-On the other hand, `nodes_`'s iterator type has `node<Key, T>&` as its `reference` type when we need `std::pair<const Key, T>&` for `dense_hash_map::iterator`.
+Sadly, `nodes_`'s iterator type has `node<Key, T>&` as its `reference` type when we need `std::pair<const Key, T>&` for `dense_hash_map::iterator`.
 What we need is a projection onto the member `pair` of `node<Key, T>` while iterating over `nodes_`.
 
 #### C++20 in all its splendor:
 
-In an ideal world, we would have a **C++20** compiler shipped with a fully **C++20** compliant standard library. Within it, we would have the [holly range library](https://en.cppreference.com/w/cpp/ranges), which would permit to lazily transform our `nodes_` into another one:
+In an ideal world, we would have a **C++20** compiler shipped with a fully **C++20** compliant standard library. Within it, we would have the [holly ranges library](https://en.cppreference.com/w/cpp/ranges), which would permit to lazily transform our `nodes_` into another one:
 
 ```c++
 // ...
@@ -78,15 +78,15 @@ class dense_hash_map {
     // ...
 private:
     auto projected_range() {
-        return nodes_ | std::views::transform([](auto& node){ return node.pair; });
+        return nodes_ | std::views::transform([](auto& node){ return node.pair.pair(); });
     }
     // ...
 };
 ```
-The range library has its quirks and limitations as some fervent members of the lost C++ society will point out.
+The ranges library has its quirks and limitations as some fervent members of the lost C++ society will point out.
 But for this kind of scenario, it is of great help. It is vastly superior to the C++17 solution as we will see.
 You can easily implement `cbegin` and `cend` in a similar way: just make your `projected_range` function const.
-`std::views::transform` even retains the concept of the range/iterators it is applied to, meaning that iterators it output in our case are still `LegacyRandomAccessIterator`.
+`std::views::transform` even retains the concept of the ranges/iterators it is applied to, meaning that iterators it output in our case are still `LegacyRandomAccessIterator`.
 
 In **C++20**, you can easily ensure that your iterator will be compliant using the newly adopted [constraints and concepts features](https://en.cppreference.com/w/cpp/language/constraints). Somewhere in your library, you could forge a `static_assert` such as:
 
@@ -115,7 +115,7 @@ note: the required expression '++ it' is invalid
     { ++it } -> std::same_as<It&>;
 ```
 
-C++ concepts are not just for **meta-programming**, it is also an elegant way to test your code with the help of your compiler.
+C++ concepts are not just for **meta-programming**. It is also an elegant way to test your code with the help of your compiler.
 One could also hope that IDEs will in the future provide a convenient way to generate stubs from a concept.
 Of course, concepts have their limits when it comes to asserting actual runtime behaviour. Unit-tests are still your best ally for that!
 
@@ -126,9 +126,9 @@ We are left on our own without any ranges at our disposal. We must forge our own
 
 While iterators are quite simple to use, writing them can be tedious. One has to scrupulously respect the concept your iterator supports.
 So in our case, we must implement all the contrainsts a [LegacyRandomAccessIterator](https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator) has.
-Which in turn means implementing all the constraints a [LegacyBidirectionalIterator](https://en.cppreference.com/w/cpp/named_req/BidirectionalIterator) has.
-Which in turn means implementing all the constraints a [LegacyForwardIterator](https://en.cppreference.com/w/cpp/named_req/ForwardIterator) has.
-Which in turn means implementing... okkkk...ay... you get it. It's a list of constraints that no sane person would remember under normal circumstances.
+Which in turn, means implementing all the constraints a [LegacyBidirectionalIterator](https://en.cppreference.com/w/cpp/named_req/BidirectionalIterator) has.
+Which in turn, means implementing all the constraints a [LegacyForwardIterator](https://en.cppreference.com/w/cpp/named_req/ForwardIterator) has.
+Which in turn, means implementing... okkkk...ay... you get it. It's a list of constraints that no sane person would remember under normal circumstances.
 
 Another old-school solution to avoid introducing any mistake in your iterator class is to cross-check all the members and free functions related to your class against an iterator of the same concept from a venerable library out there. In our case, we are writing an adaptor to `std::vector`'s iterator. A good candidate for cross-checks could be [libc++'s std::vector](https://github.com/llvm/llvm-project/blob/2f3e86b31818222a0ab87c4114215e86b89c9dfc/libcxx/include/vector#L486) [iterator](https://github.com/llvm/llvm-project/blob/f82dba019253ced73ceadfde10e5f150bdb182f3/libcxx/include/iterator). To do so, you would write unit-tests for all the members function for that iterator then try to apply them onto your own iterator.
 
@@ -141,7 +141,7 @@ Another old-school solution to avoid introducing any mistake in your iterator cl
 
 Given that **C++20** is not fully mature in all major compilers, I went for the tedious **C++17** solution. Thus was born [dense_hash_map_iterator](https://github.com/Jiwan/dense_hash_map/blob/d80d3da01d9981154e78ea85b3135b4a66a150a3/include/jg/details/dense_hash_map_iterator.hpp#L13).
 
-My iterator class takes 5 templates parameters:
+My iterator class takes **five** templates parameters:
 
 ```c++
 template <class Key, class T, class Container, bool isConst, bool projectToConstKey>
@@ -153,7 +153,7 @@ class dense_hash_map_iterator {
 The three first template parameters are rather obvious, it handles which `Key` / `T` pairs we will deal with and which `Container` type stores them.
 The last two template parameters are here to kill multiple birds with one stone. Our iterator class will both represent `iterator` and `const_iterator` by setting the first parameter `isConst`. It also gives you the choice on which version of [the Schrodinger std::pair]({filename}../C++/dense-hash-map-part-2.md) we want to project onto with the `projectToConstKey` parameter.
 
-Afterwards we can start to define some important **usings** we can re-use within our class: 
+Afterwards, we can start to define some important **usings** we can re-use within our class: 
 
 ```c++
 class dense_hash_map_iterator {
@@ -185,7 +185,7 @@ class dense_hash_map_iterator {
 };
 ```
 
-Our usings form, in some way, a matrix of all iterator types we can get from the class template `dense_hash_map_iterator`. As the output of the matrix is the `value_type` type we will return and sub-iterator type `sub_iterator_type` we will work on. Writing the rest of the `dense_hash_map_iterator` becomes a rather boring task where almost every single calls gets forwarded to a `sub_iterator_` member. Here is a very mundane implementation of the prefix increment operator:
+Our usings form, in some way, a matrix of all iterator types we can get from the class template `dense_hash_map_iterator`. As the output of the matrix is the `value_type` type we will return and sub-iterator type `sub_iterator_type` we will work on. Writing the rest of the `dense_hash_map_iterator` becomes a rather boring task where almost every single call gets forwarded to a `sub_iterator_` member. Here is a very mundane implementation of the prefix increment operator:
 
 ```c++
 class dense_hash_map_iterator {
@@ -236,18 +236,18 @@ dense_hash_map_iterator(const dense_hash_map_iterator<Key, T, Container, false, 
 {}
 ```
 
-Once again, the absence of **C++20** can be felt here. We want this constructor to be available only when `isConst` is `true`: in other words only a `const_iterator` has this extra constructor. In **C++20**, a well-placed [requires clause](https://en.cppreference.com/w/cpp/language/constraints#Requires_clauses) would conditionally enable that constructor. But in **C++17** we have to resort to an disgusting **SFINAE** trick using [std::enable_if_t](https://en.cppreference.com/w/cpp/types/enable_if). To make the matter uglier, [the complicated rules of template substition](https://stackoverflow.com/questions/14603163/how-to-use-sfinae-for-selecting-constructors) forces us to have the somewhat useless default argument `DepIsConst` instead of using `isConst` directly.
+Once again, the absence of **C++20** can be felt here. We want this constructor to be available only when `isConst` is `true`: in other words only a `const_iterator` has this extra constructor. In **C++20**, a well-placed [requires clause](https://en.cppreference.com/w/cpp/language/constraints#Requires_clauses) would conditionally enable that constructor. But in **C++17** we have to resort to an disgusting **SFINAE** trick using [std::enable_if_t](https://en.cppreference.com/w/cpp/types/enable_if). To make the matter uglier, [the complicated rules of template substitution](https://stackoverflow.com/questions/14603163/how-to-use-sfinae-for-selecting-constructors) forces us to have the somewhat useless default argument `DepIsConst` instead of using `isConst` directly.
 
 
 ** [Some external operators](https://github.com/Jiwan/dense_hash_map/blob/d80d3da01d9981154e78ea85b3135b4a66a150a3/include/jg/details/dense_hash_map_iterator.hpp#L133) **
 
-If you want to benefit from your conversion constructor within all your operators of arity 2 (operator==, operator<...), you must be careful on how to craft those. You have different options here: members, non-members, friends, non friends, template or not template... I find [Natasha Jarus explanations on the subject](https://web.mst.edu/~nmjxv3/articles/templates.html) pretty good.
+If you want to benefit from your conversion constructor within all your operators of arity 2 (operator==, operator<...), you must be careful on how to craft those. You have different options here: members, non-members, friends, non-friends, template or not template... I find [Natasha Jarus explanations on the subject](https://web.mst.edu/~nmjxv3/articles/templates.html) pretty good.
 
 I opted for the option ["give access to a const reference of my sub-iterator to everyone"](https://github.com/Jiwan/dense_hash_map/blob/d80d3da01d9981154e78ea85b3135b4a66a150a3/include/jg/details/dense_hash_map_iterator.hpp#L126), including my operators defined as free functions. It avoids a creating a cluster-fudge of forward declarations and `friend`s at the price of exposing my private parts. No fame, no shame as they say!
 
 ##### A quick note for some detractors:
 
-Our beautiful **C++20** solution expressed in few lines, became 207 lines of pure... iterator chaos. Certainely, ranges, concepts or coroutines can do more harm than good [under some circumstances](https://aras-p.info/blog/2018/12/28/Modern-C-Lamentations/). Typically, the next iterator we will work on would not be a good fit for ranges. But entirely discarding their usage due to some limitations is not a smart move either. They do bring a lot of value as clearly shown with our `dense_hash_map_iterator`!
+Our beautiful **C++20** solution expressed in few lines, became 207 lines of pure... iterator chaos. Certainly, ranges, concepts or coroutines can do more harm than good [under some circumstances](https://aras-p.info/blog/2018/12/28/Modern-C-Lamentations/). Typically, the next iterator we will work on would not be a good fit for ranges. But entirely discarding their usage due to some limitations is not a smart move either. They do bring a lot of value as clearly shown with our `dense_hash_map_iterator`!
 
 ### local iterator - a forward iterator without glamor:
 
@@ -259,11 +259,11 @@ Here is what an iteration in a bucket of size two would look like:
 
 <center><img width=50% height=50% src="{filename}/images/dense-hash-map-local-iterator.webp" alt=""/></center>
 
-Here **Key1** and **Key2** hashes collides, so our iterator started on bucket **1** yields both of these pairs.
+Here **Key1** and **Key2** hashes collide, so our iterator started on bucket **1** yields both of these pairs.
 
 To reflect the true purpose of this iterator, I named it `bucket_iterator`.
 Internally, our `bucket_iterator` can be used in conjunction with some of the standard [algorithms](https://en.cppreference.com/w/cpp/algorithm).
-For instance, we can apply a [std::find_if](https://en.cppreference.com/w/cpp/algorithm/find) to quickly pin-point a pair with a given **key** if we already know this **key** belongs to a specific **bucket**. Externally, I am not quite sure who uses this local/bucket iterator. My wild guess is that sometimes you want, as a user, to fine-tune your hashes or the [load_factor](https://en.cppreference.com/w/cpp/container/unordered_map/load_factor) of your hash map. This **local iterator** permits you to debug your hash-map without too much hassle.
+For instance, we can apply a [std::find_if](https://en.cppreference.com/w/cpp/algorithm/find) to quickly pin-point a pair with a given **key** if we already know this **key** belongs to a specific **bucket**. Externally, I am not quite sure who uses this local/bucket iterator. My wild guess is that sometimes you want, as a user, to fine-tune your hashes or the [load_factor](https://en.cppreference.com/w/cpp/container/unordered_map/load_factor) of your hash map. This **local iterator** gives you the ability to debug your hash-map without too much hassle.
 Whether this was worth a standardisation or not, I am not exactly sure. You shouldn't go against the sacred standard, so a local iterator in your hash map you should have. 
 
 The class [bucket_iterator](https://github.com/Jiwan/dense_hash_map/blob/d80d3da01d9981154e78ea85b3135b4a66a150a3/include/jg/details/bucket_iterator.hpp#L13) ends-up being very similar to `dense_hash_map_iterator`. In fact, it takes exactly the same template parameters for the same purpose. It is also a lot smaller since it is only a **LegacyForwardIterator**. It mainly differs in its [increment operator](https://github.com/Jiwan/dense_hash_map/blob/d80d3da01d9981154e78ea85b3135b4a66a150a3/include/jg/details/bucket_iterator.hpp#L47) and [dereference operator](https://github.com/Jiwan/dense_hash_map/blob/d80d3da01d9981154e78ea85b3135b4a66a150a3/include/jg/details/bucket_iterator.hpp#L35) since we are jumping around rather than doing a linear scan:
@@ -315,7 +315,7 @@ The last part of the puzzle for our iterators is a conversion function. After do
 ```
 There are two cases:
 
-- If our `bucket_iterator` is at the end of the linked-list, it means that it points to nowhere. Therefore we return a `dense_hash_map_iterator` also pointing at the end.
+- If our `bucket_iterator` is at the end of the linked-list, it means that it points to nowhere. Therefore, we return a `dense_hash_map_iterator` also pointing at the end.
 - Otherwise, we grab the current index our `bucket_iterator`. We then extract the begin iterator of our container of nodes and moving until that index. We can then craft a `dense_hash_map_iterator` out of it. Since our container's iterator is **random access** this conversion has very little cost.
 
 Enough with **iterators** and let's move onto **allocators**!
@@ -364,10 +364,10 @@ test.emplace_back(some_long_string, some_long_string); // Should construct a pai
 
 Before we dive a bit more into this code snippet, all standard containers with a prefix `pmr` are just the same usual containers with a predefined [polymorphic allocator](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator). This new allocator saves you from the hassle of writing an allocator the old fashion way. All you need to do is to write a resource with three member functions as shown here. Polymorphic allocators are worth a longer post that I will never write. In the meantime, I suggest you to use your google-fu to find some nice [articles](https://blog.feabhas.com/2019/03/thanks-for-the-memory-allocator/) or videos about it.
 
-Back to our snippet... Right here we have an external container `std::pmr::vector` which takes our resource/allocator and then we construct two strings (some internal containers) in it. How many allocations are we going to see from `debug_pmr_resource`'s point of view? The answer is [one and only one](https://godbolt.org/z/zPboQb). The vector's buffer will be allocated through `debug_pmr_resource` but not the buffers of our strings. It is unfortunate to be in such situation. As a user of some custom allocators, you really want all related objects to be stored in the same pool of memory, even more when this objects are nested structures.
+Back to our snippet... Right here we have an external container `std::pmr::vector` which takes our resource/allocator and then we construct two strings (some internal containers) in it. How many allocations are we going to see from `debug_pmr_resource`'s point of view? The answer is [one and only one](https://godbolt.org/z/zPboQb). The vector's buffer will be allocated through `debug_pmr_resource` but not the buffers of our strings. It is unfortunate to be in such a situation. As a user of some custom allocators, you really want all related objects to be stored in the same pool of memory, even more when this objects are nested structures.
 
 Does this means that you need to make both of these strings "pmr" too and feed them with the `debug_pmr_resource` at construction? Well, yes and no. 
-Changing `std::string` to `std::pmr::string` is necessary. `std::allocator` (std::string) and `std::polymorphic_allocator` (std::pmr::string) are not the same type, there is no C++ world where both of those could be compatible. But the feeding of `my_resource` is not necessary. There is a mechanism already in place from the standard that mandates that our external container `nodes` would forward its allocator to its inner containers (the two strings) if the allocator type they use are the same. We can easily [check that](https://godbolt.org/z/Sik7S8):
+Changing `std::string` to `std::pmr::string` is necessary. `std::allocator` (std::string) and `std::polymorphic_allocator` (std::pmr::string) are not the same type, there is no C++ world where both of those could be compatible. But the feeding of `my_resource` is not necessary. There is a mechanism already in place from the standard that mandates that our external container `nodes` would forward its allocator to its inner containers (the two strings) if the allocator type they use is the same. We can easily [check that](https://godbolt.org/z/Sik7S8):
 
 ```c++
 debug_pmr_resource my_resource;
@@ -383,7 +383,7 @@ test.emplace_back(some_long_string, some_long_string);
 
 ```
 
-Hurray we see two more allocations going through the resource! With a size of `27`, it must really be some buffers storing `UnPangolinVautMieuxQueRien` plus `\0`. The allocator forwarding is happening!
+Hurray, we see two more allocations going through the resource! With a size of `27`, it must really be some buffers storing `UnPangolinVautMieuxQueRien` plus `\0`. The allocator forwarding is happening!
 
 The next step for us is to be sure that we can achieve the same success not only with `std::pair<std::pmr::string, std::pmr::string>` but also with our `node` type we defined in the previous post: the type that store both a Schrodinger `std::pair` and a `next` index.
 
@@ -402,13 +402,13 @@ test.emplace_back(0, some_long_string, some_long_string);
 Bjarne damn it! We have lost the allocator forwarding again! That's unnacceptable for our `dense_hash_map` internals.
 Given that only difference is `std::pair` and `node`, should we start to investigate what makes `std::pair` so special? 
 
-### Being a good investigator:
+### To be a good investigator:
 
 "If you stare into the C++ standard, the C++ standard stares back at you." - Nietzsche 
 
 If you have a look at the pages from the [standard](http://eel.is/c++draft/pairs) or [cppreference](https://en.cppreference.com/w/cpp/utility/pair) about `std::pair` you will not find anything useful to us. There are no mentions of allocators in its [constructors](https://en.cppreference.com/w/cpp/utility/pair/pair). How did that even work?
 
-I am not a sadist, so I will help you a bit. The response to your answer is in [std::uses_allocator](https://en.cppreference.com/w/cpp/memory/uses_allocator) in **C++17**. This type-trait is used when constructing objects within your allocators (more precisely in [std::make_obj_using_allocator](https://en.cppreference.com/w/cpp/memory/make_obj_using_allocator) in **C++20**). It permits to checks if the object you are creating using your allocator takes an allocator **itself**! Here comes a shortened explanation.
+I am not a sadist, so I will help you a bit. The response to your answer is in [std::uses_allocator](https://en.cppreference.com/w/cpp/memory/uses_allocator) in **C++17**. This type-trait is used when constructing objects within your allocators (more precisely in [std::make_obj_using_allocator](https://en.cppreference.com/w/cpp/memory/make_obj_using_allocator) in **C++20**). It let you check if the object you are creating using your allocator takes an allocator **itself**! Here comes a shortened explanation.
 
 There are two ways std::uses_allocator will detect your object can receive an allocator:
 
@@ -435,8 +435,10 @@ struct uses_allocator<node<Key, T>, Allocator> : true_type
 };
 }
 ```
+All these constructors must take a std::allocator_arg_t tag parameter to differentiate them from the others, the non-allocator-forwarding ones. The second parameter is always the instance of the allocator itself alloc and the rest are the parameters you would find in their non-allocator-forwarding equivalents. As I just implied, you must have exactly the same amount of allocator-forwarding constructors as you have normal ones! You must be able to do all operations with or without involving allocators.
 
-This express that for any `node` and any `Allocator`, an instance of `node` can receive an instance of `allocator` to forward it deep down.
+As soon as we have an alloc we can send it deep down to the Schrodinger pair. The Schrodinger pair must then construct its mutable std::pair variant taking that allocator in consideration:
+This expresses that for any `node` and any `Allocator`, an instance of `node` can receive an instance of `allocator` to forward it deep down.
 By which mean the instance of `node` will receive that instance `allocator`? With some special constructors:
 
 ```c++
@@ -493,13 +495,13 @@ union union_key_value_pair
 ```
 
 Once again, `union_key_value_pair` uses the tag type `std::allocator_arg_t` to be sure not to collide with other constructors. 
-We will then construct the `pair_` in place ; meaning that we will skip the memory allocation part of it since we already have the storage for it. Constructing an object in **C++17** with an allocator requires you a Phd in C++ arcaneries: you need a non-const instance of that allocator coupled to the [allocator_traits](https://en.cppreference.com/w/cpp/memory/allocator_traits). **C++20** can once again save you some time here with [std::make_obj_using_allocator](https://en.cppreference.com/w/cpp/memory/make_obj_using_allocator).
+We will then construct the `pair_` in place ; meaning that we will skip the memory allocation part of it since we already have the storage for it. Constructing an object in **C++17** with an allocator requires you a PhD in C++ arcaneries: you need a non-const instance of that allocator coupled to the [allocator_traits](https://en.cppreference.com/w/cpp/memory/allocator_traits). **C++20** can once again save you some time here with [std::make_obj_using_allocator](https://en.cppreference.com/w/cpp/memory/make_obj_using_allocator).
 
 And on this positive note we are done with allocators! Our node class has the same behaviour a std::pair, it will reuse the allocator it was allocated with for its own members.
 
 ## Conclusion from the author:
 
-It was quite a labor to implement the iterators types for our dense_hash_map. We also discovered with stupor that allocators are not working out of the box for custom types. To have or not to have access to C++20 is also a huge factor in how maintenable you can write such code. C++17 demands a lot more rigor when dealing with pseudo-standard code.
+It was quite a labor to implement the iterators types for our dense_hash_map. We also discovered with stupor that allocators are not working out of the box for custom types. To have or not to have access to C++20 is also a huge factor in how easily you can write such code. C++17 demands a lot more rigor when dealing with "standard" code.
 
-I have been selling these blog posts as us building a hash map together, so I am assuming that you are quite furor by now: all the prior posts and this one did not contain a single line of algorithms. The rumor is that the next post will be about a maze of insertion algorithms, so stay tuned!
+I have been selling these blog posts as us building a hash map together... so I am assuming that you are quite in furor by now since all the prior posts and this one did not contain a single line of algorithms. The rumor is that the next post will be about a maze of insertion algorithms, so stay tuned!
 
