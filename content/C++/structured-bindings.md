@@ -101,7 +101,4 @@ std::cout << x << "," << y;
 
 ## First conclusion
 
-Now we have a grand master plan to beat `std::unordered_map` by removing some assumptions the standard had to make to be preserve us from some dangers.
-The hacks used are not even too difficult to grasp, so where is the difficulty in writing new containers? Well, some creepy C++ features are waiting for us around the corner.
-
-Be ready for the next phase: [Part 2 - Growth Policies & The Schrodinger std::pair]({filename}../C++/dense-hash-map-part-2.md)!
+TODO.
