@@ -70,7 +70,7 @@ a_secret_variable[1] = 42;
 std::cout << an_array[0] << "," << an_array[1];
 ```
 
-As you can see, `x` and `y` do not really exist as variables either, they don't have their own storage! Rather, they should be seen as special identifiers ; what the standard call "the names of lvalues that refer to some elements". In this scenario, `x` is a special identifier that refers to `a_secret_variable[0]`. And `y` is a special identifier that refers to `a_secret_variable[1]`.
+As you can see, `x` and `y` do not really exist as variables, they don't have their own storage! Rather, they should be seen as special identifiers ; what the standard call "the names of lvalues that refer to some elements". In this scenario, `x` is a special identifier that refers to `a_secret_variable[0]`. And `y` is a special identifier that refers to `a_secret_variable[1]`.
 Since `a_secret_variable` is a l-value reference to `an_array`, mutating `a_secret_variable` is equivalent to mutating `an_array`. Therefore, this snippet will print `42,42`.
 
 Note that the number of special identifiers must match the size of your array! Your compiler will yield an error otherwise.
