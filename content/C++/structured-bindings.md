@@ -1,4 +1,4 @@
-Title: Let's unravel C++17's structured bindings 
+Title: Let's unravel the secrets behind C++17's structured bindings 
 Date: 17:40 05-17-2020 
 Modified: 17:40 05-17-2020
 Tags: C++17, structured bindings. 
