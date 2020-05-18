@@ -125,7 +125,7 @@ There is a subtle catch here though. What would `decltype(x)` yield as type (wha
 C++ is like a box of chocolates... you never know what you're gonna get!
 
 So why did the standard committee went into creating such "special identifiers" and not simply have proper reference variables?
-If you do so, you have multiple issues here, like:
+If you do so, you have multiple issues, like:
 
 - How would you handle bit fields? There is not such a thing as reference to bit fields.
 - Imagine that you were to capture those variables in a lambda `[=](){}`. What should happen here? Shall this copy the entire `a_secret_variable` or just the members of it?
