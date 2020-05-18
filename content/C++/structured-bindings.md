@@ -124,6 +124,13 @@ Note that the number of special identifiers must also match the number of member
 There is a subtle catch here though. What would `decltype(x)` yield as type (what the standard calls referenced type)? One would assume that this would be strictly the same as `decltype(a_secret_variable.a)` which is equivalent to `int`. The standard made a nice plot-twist here and `decltype(x)` will, in rough terms, have a type equivalent to `decltype(a_secret_variable.a)` **plus** the `const` or `volatile` qualifiers attached to `a_secret_variable`. In our case `a_secret_variable` is `const`, which result in `decltype(x)` being equivalent to `const decltype(a_secret_variable.a)` or in a simpler form `const int`.
 C++ is like a box of chocolates... you never know what you're gonna get!
 
+So why did the standard went into creating such "special identifiers" and not simply have proper variables which are references?
+If you do so, you have multiple issues here, like:
+- How would you handle bit fields? There is not such a thing as reference to bit fields.
+- Imagine that you were to capture those variables in a lambda `[=](){}`. What should happen here? Shall this copy the entire `a_secret_variable` or just the members of it?
+- ...
+For these reasons, the standard had to treat those identifiers in a special way.
+
 ### Tuple-like types:
 
 The last kind of types you can bind are tuple-like types. In layman's terms, these types are similar to [std::tuple](https://en.cppreference.com/w/cpp/utility/tuple) in the sense that you can access their members/values using `std::get` or a member function `get` on them. These types do not give a direct access to their members/values but still want to be part of the cool club of structured bindings. Ultimately, this led the standard to use type traits to describe how to access these members. 
