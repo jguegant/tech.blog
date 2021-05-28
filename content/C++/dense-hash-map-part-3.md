@@ -49,7 +49,7 @@ for (auto& [key, value] : my_map) {
 
 The modern picasso in me decided to show you what this range-loop would do internally:
 
-<center><img width=50% height=50% src="{filename}/images/dense-hash-map-iterator.webp" alt=""/></center>
+<center><img width=50% height=50% src="{filename}/images/dense-hash-map-iterator.webp" alt="Iterator"/></center>
 
 Yes, it should be as simple as iterating in our `nodes_` container. No, it won't be as easy as you may think.
 
@@ -257,7 +257,7 @@ It cannot be easily expressed using range views due to its access pattern. And t
 What this ill-named iterator gives you is an access to a specific bucket, i.e jumping through all the pairs that have keys whose hash collide.
 Here is what an iteration in a bucket of size two would look like:
 
-<center><img width=50% height=50% src="{filename}/images/dense-hash-map-local-iterator.webp" alt=""/></center>
+<center><img width=50% height=50% src="{filename}/images/dense-hash-map-local-iterator.webp" alt="Local iterator"/></center>
 
 Here **Key1** and **Key2** hashes collide, so our iterator started on bucket **1** yields both of these pairs.
 
