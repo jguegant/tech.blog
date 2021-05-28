@@ -43,8 +43,14 @@ DEFAULT_PAGINATION = 10
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
 
-# THEME
+# THEME FLEX
 THEME = "../Flex"
+
+JINJA_ENVIRONMENT = {'extensions': ['jinja2.ext.i18n']}
+I18N_TEMPLATES_LANG = "en"
+DEFAULT_LANG = "en"
+OG_LOCALE = "en_US"
+LOCALE = "en_US"
 
 # Copyright License.
 CC_LICENSE = {
@@ -59,8 +65,8 @@ COPYRIGHT_YEAR = 2015
 ROBOTS = u'index, follow'
 
 # Sitemap for robots.
-PLUGIN_PATHS = ['../plugins']
-PLUGINS = ['sitemap']
+PLUGIN_PATHS = ['../pelican-plugins']
+PLUGINS = ['sitemap', 'i18n_subsites']
 
 SITEMAP = {
     'format': 'xml',
